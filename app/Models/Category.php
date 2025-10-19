@@ -11,19 +11,14 @@ class Category extends Model
 {
     use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
+        'parent_id',
         'name',
         'slug',
-        'parent_id',
     ];
 
     /**
-     * Define a relação para encontrar a categoria pai (um-para-muitos, inverso).
+     * Define que uma categoria pertence a uma categoria pai (opcional).
      */
     public function parent(): BelongsTo
     {
@@ -31,10 +26,18 @@ class Category extends Model
     }
 
     /**
-     * Define a relação para encontrar as categorias filhas (um-para-muitos).
+     * Define que uma categoria pode ter muitas categorias filhas.
      */
     public function children(): HasMany
     {
         return $this->hasMany(Category::class, 'parent_id');
+    }
+
+    /**
+     * Define que uma categoria tem muitos produtos.
+     */
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
     }
 }

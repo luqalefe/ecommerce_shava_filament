@@ -14,7 +14,6 @@ class EnderecoResource extends Resource
 {
     protected static ?string $model = Endereco::class;
 
-    // Traduções e Agrupamento
     protected static ?string $modelLabel = 'Endereço';
     protected static ?string $pluralModelLabel = 'Endereços';
     protected static ?string $navigationGroup = 'Loja';
@@ -24,29 +23,18 @@ class EnderecoResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('usuario_id')
-                    ->relationship('usuario', 'name')
+                Forms\Components\Select::make('user_id') // <-- A correção final
+                    ->relationship(name: 'user', titleAttribute: 'name')
                     ->label('Cliente')
                     ->searchable()
+                    ->preload() // Boa prática para campos de busca
                     ->required(),
-                Forms\Components\TextInput::make('rua')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('numero')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('complemento')
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('cidade')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('estado')
-                    ->required()
-                    ->maxLength(255),
-                Forms\Components\TextInput::make('cep')
-                    ->label('CEP')
-                    ->required()
-                    ->maxLength(255),
+                Forms\Components\TextInput::make('rua')->required()->maxLength(255),
+                Forms\Components\TextInput::make('numero')->required()->maxLength(255),
+                Forms\Components\TextInput::make('complemento')->maxLength(255),
+                Forms\Components\TextInput::make('cidade')->required()->maxLength(255),
+                Forms\Components\TextInput::make('estado')->required()->maxLength(255),
+                Forms\Components\TextInput::make('cep')->label('CEP')->required()->maxLength(255),
             ]);
     }
 
@@ -54,26 +42,17 @@ class EnderecoResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('usuario.name')
+                Tables\Columns\TextColumn::make('user.name')
                     ->label('Cliente')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('rua')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('cidade')
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('cep')
-                    ->label('CEP')
-                    ->searchable(),
+                Tables\Columns\TextColumn::make('rua')->searchable(),
+                Tables\Columns\TextColumn::make('cidade')->searchable(),
+                Tables\Columns\TextColumn::make('cep')->label('CEP')->searchable(),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
             ]);
     }
 

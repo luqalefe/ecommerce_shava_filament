@@ -22,6 +22,13 @@ class User extends Authenticatable
         'email',
         'password',
     ];
+    // Dentro da classe User
+
+    public function enderecos()
+    {
+        // Como agora seguimos a convenção, não precisamos mais passar o segundo parâmetro
+        return $this->hasMany(Endereco::class);
+    }
 
     /**
      * The attributes that should be hidden for serialization.
@@ -38,12 +45,12 @@ class User extends Authenticatable
      *
      * @return array<string, string>
      */
-  protected function casts(): array
-{
-    return [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-        'is_admin' => 'boolean', // <-- Adicione esta linha
-    ];
-}
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'is_admin' => 'boolean', // <-- Adicione esta linha
+        ];
+    }
 }

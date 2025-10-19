@@ -10,11 +10,12 @@ class Endereco extends Model
     use HasFactory;
 
     protected $fillable = [
-        'usuario_id', 'rua', 'numero', 'complemento', 'cidade', 'estado', 'cep'
+        'user_id', 'rua', 'numero', 'complemento', 'cidade', 'estado', 'cep' // <-- CORRIGIDO AQUI
     ];
 
-    public function usuario()
+    public function user() // <-- CORRIGIDO AQUI (para user)
     {
-        return $this->belongsTo(User::class, 'usuario_id');
+        // Como agora seguimos a convenção, não precisamos mais passar o segundo parâmetro
+        return $this->belongsTo(User::class);
     }
 }
