@@ -30,5 +30,15 @@ return [
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
+    'abacatepay' => [
+        'key' => env('ABACATEPAY_API_KEY'),
+    ],
+
+
+    'frenet' => [
+        'token' => env('FRENET_TOKEN'),
+        'seller_postcode' => env('FRENET_SELLER_POSTCODE'),
+    ],
+
 
 ];
