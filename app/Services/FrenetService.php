@@ -17,6 +17,13 @@ class FrenetService
         $this->baseUrl = 'https://api.frenet.com.br'; // URL base da API
         $this->token = config('services.frenet.token');
         $this->sellerPostcode = config('services.frenet.seller_postcode');
+        
+        // Log temporário para debug (remova depois)
+        Log::info('FrenetService inicializado', [
+            'token_length' => $this->token ? strlen($this->token) : 0,
+            'token_preview' => $this->token ? substr($this->token, 0, 10) . '...' : 'NULL',
+            'seller_postcode' => $this->sellerPostcode,
+        ]);
     }
 
     /**

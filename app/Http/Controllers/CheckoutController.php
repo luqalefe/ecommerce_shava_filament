@@ -170,9 +170,14 @@ class CheckoutController extends Controller
 
             // <<< MODIFICADO: Adiciona o Frete como um produto na AbacatePay >>>
             if ($shippingCost > 0) {
-                 $productsPayload[] = [
-                    'externalId' => 'FRETE',
-                    'name' => 'Taxa de Entrega (' . $request->input('shipping_service') . ')',
+                // Limita o nome do serviço e remove caracteres especiais que podem causar problemas
+                $shippingServiceName = $request->input('shipping_service');
+                $shippingServiceName = mb_substr($shippingServiceName, 0, 50); // Limita a 50 caracteres
+                $shippingServiceName = preg_replace('/[^\w\s\-\(\)]/', '', $shippingServiceName); // Remove caracteres especiais
+                
+                $productsPayload[] = [
+                    'externalId' => 'SHIPPING_' . $order->id, // MODIFICADO: Usa ID do pedido em vez de apenas "FRETE"
+                    'name' => 'Taxa de Entrega (' . $shippingServiceName . ')',
                     'quantity' => 1,
                     'price' => (int) ($shippingCost * 100), // Preço do frete em centavos
                 ];
@@ -195,6 +200,12 @@ class CheckoutController extends Controller
 
             // Configuração da API e URL
             $apiKey = config('services.abacatepay.key');
+            
+            // MODIFICADO: Validação da API key
+            if (empty($apiKey)) {
+                throw new \Exception('Chave da API Abacate Pay não configurada. Verifique o arquivo .env');
+            }
+            
             $apiUrl = 'https://api.abacatepay.com/v1/billing/create';
 
             // Payload para /billing/create
@@ -207,6 +218,35 @@ class CheckoutController extends Controller
                 'customer' => $customerData,
                 'description' => "Pedido #" . $order->id,
             ];
+
+            // MODIFICADO: Validação do payload antes de enviar
+            // Garante que todos os produtos têm price > 0
+            foreach ($billingData['products'] as $product) {
+                if (!isset($product['price']) || $product['price'] <= 0) {
+                    throw new \Exception('Produto com preço inválido: ' . ($product['name'] ?? 'Desconhecido'));
+                }
+                if (empty($product['name'])) {
+                    throw new \Exception('Produto sem nome');
+                }
+                if (empty($product['externalId'])) {
+                    throw new \Exception('Produto sem externalId');
+                }
+            }
+
+            // Validação do customer
+            if (empty($customerData['name']) || empty($customerData['email']) || empty($customerData['taxId']) || empty($customerData['cellphone'])) {
+                throw new \Exception('Dados do cliente incompletos');
+            }
+
+            // Validação do taxId (CPF) - deve ter 11 dígitos
+            if (strlen($customerData['taxId']) !== 11) {
+                throw new \Exception('CPF inválido: deve ter 11 dígitos');
+            }
+
+            // Validação do cellphone - deve ter pelo menos 10 dígitos
+            if (strlen($customerData['cellphone']) < 10) {
+                throw new \Exception('Celular inválido: deve ter pelo menos 10 dígitos');
+            }
 
             // *** ADICIONADO LOG DETALHADO DA REQUISIÇÃO ***
             Log::info('Requisição para AbacatePay (/billing/create):', [
@@ -223,6 +263,14 @@ class CheckoutController extends Controller
             $response = Http::withToken($apiKey)->post($apiUrl, $billingData);
             $paymentResponse = $response->json();
 
+            // MODIFICADO: Log mais detalhado da resposta
+            Log::info('Resposta da API AbacatePay:', [
+                'status' => $response->status(),
+                'headers' => $response->headers(),
+                'body' => $response->body(),
+                'json' => $paymentResponse,
+            ]);
+
             // Verificar sucesso e salvar ID da cobrança (billing ID)
             if ($response->successful() && isset($paymentResponse['data']['id']) && isset($paymentResponse['data']['url'])) {
                 $order->update([
@@ -235,7 +283,16 @@ class CheckoutController extends Controller
                 return redirect()->away($paymentResponse['data']['url']);
 
             } else {
-                Log::error('Falha na API AbacatePay (/billing/create): ', $paymentResponse ?? ['raw_body' => $response->body()]);
+                // MODIFICADO: Log mais detalhado do erro
+                Log::error('Falha na API AbacatePay (/billing/create):', [
+                    'status' => $response->status(),
+                    'status_text' => $response->reason(),
+                    'headers' => $response->headers(),
+                    'body' => $response->body(),
+                    'json' => $paymentResponse,
+                    'request_payload' => $billingData, // Log do que foi enviado
+                ]);
+                
                 $errorMessage = $paymentResponse['message'] ?? ($paymentResponse['error'] ?? $response->reason());
                 if (isset($paymentResponse['errors']) && is_array($paymentResponse['errors'])) {
                     $errorMessage .= ' Detalhes: ' . implode(', ', array_map(fn($err) => $err['message'] ?? json_encode($err), $paymentResponse['errors']));

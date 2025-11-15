@@ -91,8 +91,9 @@
                         <div id="shipping-results-container" class="mt-3">
                             </div>
                         
-                        <input type="hidden" name="shipping_service" id="shipping_service_input" required>
-                        <input type="hidden" name="shipping_cost" id="shipping_cost_input" required>
+                        {{-- MODIFICADO: Removido 'required' e adicionado validação customizada --}}
+                        <input type="hidden" name="shipping_service" id="shipping_service_input">
+                        <input type="hidden" name="shipping_cost" id="shipping_cost_input">
                     </div>
                 </div>
                 {{-- Seção de Pagamento (Visual Placeholder) --}}
@@ -353,7 +354,7 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         });
         resultsContainer.innerHTML = html;
-        clearShipping(); // Limpa os valores antes de uma nova seleção
+        // REMOVIDO: clearShipping() - não limpar mais aqui, apenas quando necessário
     }
 
     function clearShipping() {
@@ -364,6 +365,90 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reseta o Resumo do Pedido
         summaryShippingEl.innerText = 'A calcular';
         summaryTotalEl.innerText = formatCurrency(subtotal);
+    }
+
+    // --- VALIDAÇÃO ANTES DO SUBMIT ---
+    const checkoutForm = document.querySelector('form[action="{{ route("checkout.store") }}"]');
+    let isSubmitting = false; // Flag para evitar submit duplo
+    
+    if (checkoutForm) {
+        checkoutForm.addEventListener('submit', function(e) {
+            // Previne múltiplos submits
+            if (isSubmitting) {
+                e.preventDefault();
+                return false;
+            }
+            
+            // Validação do endereço
+            const addressId = document.getElementById('address_id')?.value;
+            const newAddressForm = document.getElementById('new-address-form');
+            const isNewAddressVisible = newAddressForm && !newAddressForm.classList.contains('d-none');
+            
+            if (!addressId || addressId === '' || addressId === 'new') {
+                // Se não há endereço selecionado, verifica se o formulário novo está visível e preenchido
+                if (isNewAddressVisible) {
+                    const rua = document.getElementById('rua')?.value.trim();
+                    const numero = document.getElementById('numero')?.value.trim();
+                    const cidade = document.getElementById('cidade')?.value.trim();
+                    const estado = document.getElementById('estado')?.value.trim();
+                    const cep = document.getElementById('cep')?.value.trim();
+                    
+                    if (!rua || !numero || !cidade || !estado || !cep) {
+                        e.preventDefault();
+                        alert('Por favor, preencha todos os campos obrigatórios do endereço.');
+                        document.querySelector('#new-address-form').scrollIntoView({ 
+                            behavior: 'smooth', 
+                            block: 'center' 
+                        });
+                        return false;
+                    }
+                } else {
+                    e.preventDefault();
+                    alert('Por favor, selecione um endereço existente ou preencha um novo endereço.');
+                    document.querySelector('#new-address-form').scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center' 
+                    });
+                    return false;
+                }
+            }
+            
+            // Validação do frete
+            const shippingService = shippingServiceInput.value.trim();
+            const shippingCost = shippingCostInput.value.trim();
+            
+            if (!shippingService || !shippingCost) {
+                e.preventDefault();
+                alert('Por favor, calcule e selecione uma opção de frete antes de finalizar o pedido.');
+                document.querySelector('#shipping-results-container').scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+                return false;
+            }
+            
+            // Valida se um radio foi selecionado
+            const selectedShipping = document.querySelector('input[name="shipping_option"]:checked');
+            if (!selectedShipping) {
+                e.preventDefault();
+                alert('Por favor, selecione uma opção de frete antes de finalizar o pedido.');
+                document.querySelector('#shipping-results-container').scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+                return false;
+            }
+            
+            // Se passou todas as validações, marca como submetendo e permite o submit
+            isSubmitting = true;
+            
+            // Desabilita o botão para evitar múltiplos cliques
+            const submitBtn = checkoutForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Processando...';
+            }
+        });
     }
 });
 </script>

@@ -36,8 +36,8 @@ return [
 
 
     'frenet' => [
-        'token' => env('FRENET_TOKEN'),
-        'seller_postcode' => env('FRENET_SELLER_POSTCODE'),
+        'token' => env('FRENET_API_TOKEN'),
+        'seller_postcode' => env('FRENET_CEP_ORIGEM'),
     ],
 
 
