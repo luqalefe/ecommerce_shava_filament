@@ -25,6 +25,7 @@ class User extends Authenticatable
         'password',
         'celular',
         'cpf',
+        'is_admin',
     ];
     // Dentro da classe User
 

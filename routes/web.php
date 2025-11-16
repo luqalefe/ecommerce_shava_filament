@@ -2,13 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 
-// Importação dos Controllers
+// Importação dos Controllers (mantidos para rotas ainda não migradas)
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
-use App\Http\Controllers\ProfileController; // Controller do Breeze para perfil
+use App\Http\Controllers\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,34 +16,60 @@ use App\Http\Controllers\ProfileController; // Controller do Breeze para perfil
 */
 
 // --- ROTAS PÚBLICAS DA LOJA ---
+
+// Home (ainda não migrado para Livewire - manter por enquanto)
 Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/loja', [ProductController::class, 'index'])->name('products.index');
+
+// Sobre Nós (Livewire)
+Route::get('/sobre-nos', \App\Livewire\AboutPage::class)->name('about');
+
+// MODIFICADO: Loja agora usa Livewire
+Route::get('/loja', \App\Livewire\ProductList::class)->name('products.index');
+
+// Categoria (ainda não migrado - manter)
 Route::get('/categoria/{category:slug}', [CategoryController::class, 'show'])->name('category.show');
+
+// Produto individual (ainda não migrado - manter)
 Route::get('/produto/{product:slug}', [ProductController::class, 'show'])->name('product.show');
+
+// Comprar Agora (pode manter ou migrar depois)
 Route::post('/comprar-agora/{product}', [CheckoutController::class, 'buyNow'])->name('checkout.buyNow');
 
 // --- ROTAS DO CARRINHO ---
-Route::get('/carrinho', [CartController::class, 'index'])->name('cart.index');
-Route::post('/carrinho/adicionar/{product}', [CartController::class, 'store'])->name('cart.store');
-Route::patch('/carrinho/atualizar/{item}', [CartController::class, 'update'])->name('cart.update');
-Route::delete('/carrinho/remover/{item}', [CartController::class, 'destroy'])->name('cart.destroy');
+
+// MODIFICADO: Carrinho agora usa Livewire
+Route::get('/carrinho', \App\Livewire\CartPage::class)->name('cart.index');
+
+// NOTA: As rotas POST/PATCH/DELETE do carrinho antigo podem ser removidas
+// pois agora o AddToCart e CartPage Livewire fazem isso via wire:click
+// Mas vamos manter comentadas por enquanto para não quebrar nada:
+// Route::post('/carrinho/adicionar/{product}', [CartController::class, 'store'])->name('cart.store');
+// Route::patch('/carrinho/atualizar/{item}', [CartController::class, 'update'])->name('cart.update');
+// Route::delete('/carrinho/remover/{item}', [CartController::class, 'destroy'])->name('cart.destroy');
 
 // --- ROTAS QUE EXIGEM AUTENTICAÇÃO ---
 Route::middleware(['auth'])->group(function () {
 
-    // --- ROTAS DE CHECKOUT ---
-    // (A rota GET /checkout estava duplicada, deixei só esta)
-    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+    // MODIFICADO: Checkout agora usa Livewire
+    Route::get('/checkout', \App\Livewire\CheckoutPage::class)->name('checkout.index');
 
-    // (Esta era a rota que faltava. Agora está descomentada e no lugar certo)
+    // MANTER: Rota POST do checkout (o Livewire CheckoutPage vai fazer submit via wire:click)
+    // Mas podemos manter por enquanto como fallback:
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 
-    // (Rota da página de sucesso)
+    // MANTER: Rota da página de sucesso (não precisa ser Livewire)
     Route::get('/checkout/pedido-realizado', [CheckoutController::class, 'success'])->name('checkout.success');
 
+    // MANTER: API endpoint para cálculo de frete (usado pelo CheckoutPage Livewire)
     Route::post('/checkout/calculate-shipping', [CheckoutController::class, 'calculateShipping'])
         ->name('checkout.shipping.calculate');
 
+    // --- MEUS PEDIDOS (Livewire) ---
+    Route::get('/meus-pedidos', \App\Livewire\MyOrdersList::class)
+        ->name('orders.index');
+    
+    Route::get('/meus-pedidos/{order}', \App\Livewire\ViewOrderDetails::class)
+        ->name('order.show');
 
     // --- PERFIL E DASHBOARD (Breeze) ---
 
@@ -53,12 +78,30 @@ Route::middleware(['auth'])->group(function () {
         return view('dashboard');
     })->name('dashboard');
 
-    // Rotas de Gerenciamento de Perfil
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    // Rotas de Gerenciamento de Perfil (Livewire)
+    Route::get('/profile', \App\Livewire\ProfilePage::class)->name('profile.edit');
+    // Mantém as rotas PATCH e DELETE para compatibilidade, mas o Livewire faz tudo via wire:submit
+    // Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    // Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
 }); // Fecha o Route::middleware('auth')->group
 
-// Inclui as rotas de autenticação (Login, Registro, Senha Esquecida, etc.)
+// --- ROTAS DE AUTENTICAÇÃO (Livewire) ---
+Route::middleware('guest')->group(function () {
+    Route::get('/login', \App\Livewire\Auth\LoginPage::class)->name('login');
+    Route::get('/register', \App\Livewire\Auth\RegisterPage::class)->name('register');
+    
+    // Rotas do Google Socialite
+    Route::get('/auth/google/redirect', [\App\Http\Controllers\Auth\GoogleLoginController::class, 'redirectToGoogle'])
+        ->name('auth.google.redirect');
+    Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleLoginController::class, 'handleGoogleCallback'])
+        ->name('auth.google.callback');
+});
+
+// Rota de Logout (mantida do Breeze)
+Route::post('/logout', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'destroy'])
+    ->middleware('auth')
+    ->name('logout');
+
+// Inclui outras rotas de autenticação (senha esquecida, etc.) do Breeze
 require __DIR__ . '/auth.php';

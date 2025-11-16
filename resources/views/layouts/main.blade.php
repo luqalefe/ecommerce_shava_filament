@@ -6,44 +6,44 @@
     <title>@yield('title', 'Shava Haux')</title>
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    {{-- Bootstrap CSS e Ícones via CDN --}}
+    
+    {{-- Vite para TailwindCSS e Alpine.js --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    
+    {{-- Livewire Styles --}}
+    @livewireStyles
+    
+    {{-- Bootstrap CSS (mantido para compatibilidade com páginas antigas) --}}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    {{-- Seus Estilos Personalizados --}}
+    {{-- Google Fonts --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    {{-- Estilos Personalizados --}}
     <style>
-        @font-face { font-family: 'Psychoart'; src: url("{{ asset('fonts/psychoart.ttf') }}") format('truetype'); }
-        body { font-family: 'Psychoart', serif; background-color: #FDF8F0; color: #403A30; }
-        :root {
-            --sh-muted-gold: #B3AF8F; --sh-dark-text: #403A30; --sh-white: #FFFFFF; --sh-medium-bg: #EAE3D4;
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+            background-color: #FDF8F0; 
+            color: #403A30; 
         }
-        /* Header */
-        .navbar { background-color: var(--sh-white); border-bottom: 1px solid var(--sh-medium-bg); }
-        .sh-logo { height: 60px; }
-        .navbar-nav .nav-link { color: var(--sh-dark-text); font-weight: 700; font-size: 1.1rem; padding: 0.8rem 1.2rem; }
-        .navbar-nav .nav-link:hover, .navbar-nav .nav-link.active { color: var(--sh-muted-gold); }
-        .dropdown-menu { background-color: var(--sh-white); border: 1px solid var(--sh-medium-bg); }
-        .dropdown-item { font-family: 'Psychoart', serif; font-weight: bold; color: var(--sh-dark-text); }
-        .dropdown-item:hover { background-color: var(--sh-medium-bg); }
-        @media (min-width: 992px) { .navbar-nav .dropdown:hover .dropdown-menu { display: block; margin-top: 0; } }
-        .navbar .btn-link { color: var(--sh-dark-text); text-decoration: none; }
-        .navbar .btn-link:hover { color: var(--sh-muted-gold); }
-        /* Footer */
-        .footer-shava { background-color: #fefcf9; color: var(--sh-dark-text); padding-top: 4rem; padding-bottom: 2rem; position: relative; overflow: hidden; } /* Adicionado overflow: hidden */
-        #canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; } /* Removido overflow: hidden daqui */
-        .footer-shava .footer-content { position: relative; z-index: 1; /* Removido background e blur daqui, pode ser adicionado se precisar */ }
-        .footer-shava h6 { font-weight: bold; text-transform: uppercase; margin-bottom: 1rem; }
-        .footer-shava a { color: var(--sh-dark-text); text-decoration: none; }
-        .footer-shava a:hover { color: #C87941; }
-        .footer-shava .bottom-bar { border-top: 1px solid var(--sh-medium-bg); color: var(--sh-muted-gold); }
-        .footer-shava .footer-logo { max-height: 70px; margin-bottom: 1rem; }
-        /* Carrossel */
-         .hero-slide-image { width: 100%; height: 100%; background-size: cover; background-position: center; }
-         .carousel-caption { background: rgba(0, 0, 0, 0.4); inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white;}
-         /* Correção visibilidade controles carrossel */
-         .carousel-control-prev-icon, .carousel-control-next-icon { filter: invert(1) grayscale(100); }
-         .carousel-indicators button { background-color: rgba(255, 255, 255, 0.5); border: 0; }
-         .carousel-indicators .active { background-color: white; }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Playfair Display', serif;
+        }
+        :root {
+            --sh-muted-gold: #B3AF8F; 
+            --sh-dark-text: #403A30; 
+            --sh-white: #FFFFFF; 
+            --sh-medium-bg: #EAE3D4;
+        }
+        /* Carrossel (mantido para compatibilidade) */
+        .hero-slide-image { width: 100%; height: 100%; background-size: cover; background-position: center; }
+        .carousel-caption { background: rgba(0, 0, 0, 0.4); inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white;}
+        .carousel-control-prev-icon, .carousel-control-next-icon { filter: invert(1) grayscale(100); }
+        .carousel-indicators button { background-color: rgba(255, 255, 255, 0.5); border: 0; }
+        .carousel-indicators .active { background-color: white; }
     </style>
     @stack('styles')
 </head>
@@ -54,8 +54,11 @@
     </main>
     @include('layouts.partials.footer')
 
-    {{-- Bootstrap JS Bundle --}}
+    {{-- Bootstrap JS Bundle (mantido para compatibilidade) --}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    
+    {{-- Livewire Scripts --}}
+    @livewireScripts
 
     {{-- Script p5.js e Lógica do Footer --}}
     @push('scripts')

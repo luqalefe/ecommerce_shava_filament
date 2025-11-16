@@ -47,7 +47,8 @@ class OrderResource extends Resource
                         'cancelled' => 'Cancelado',
                     ])
                     ->required()
-                    ->default('pending'),
+                    ->searchable()
+                    ->live(),
                 Forms\Components\TextInput::make('total_amount')
                     ->label('Valor Total')
                     ->numeric()
@@ -130,6 +131,127 @@ class OrderResource extends Resource
             ->actions([
                 Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('marcar_processando')
+                        ->label('Marcar como Processando')
+                        ->icon('heroicon-o-cog')
+                        ->color('info')
+                        ->action(function (Order $record) {
+                            \Illuminate\Support\Facades\Log::info('Ação marcar_processando INICIADA', [
+                                'order_id' => $record->id,
+                                'current_status' => $record->status,
+                            ]);
+                            
+                            try {
+                                $record->update(['status' => 'processing']);
+                                
+                                \Illuminate\Support\Facades\Log::info('Ação marcar_processando CONCLUÍDA', [
+                                    'order_id' => $record->id,
+                                    'new_status' => $record->fresh()->status,
+                                ]);
+                                
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Status atualizado para Processando')
+                                    ->success()
+                                    ->send();
+                            } catch (\Exception $e) {
+                                \Illuminate\Support\Facades\Log::error('Erro ao atualizar status', [
+                                    'order_id' => $record->id,
+                                    'error' => $e->getMessage(),
+                                ]);
+                                
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Erro ao atualizar status')
+                                    ->body($e->getMessage())
+                                    ->danger()
+                                    ->send();
+                            }
+                        })
+                        ->visible(fn (Order $record) => $record->status !== 'processing'),
+                    Tables\Actions\Action::make('marcar_enviado')
+                        ->label('Marcar como Enviado')
+                        ->icon('heroicon-o-truck')
+                        ->color('primary')
+                        ->action(function (Order $record) {
+                            \Illuminate\Support\Facades\Log::info('Ação marcar_enviado INICIADA', [
+                                'order_id' => $record->id,
+                                'current_status' => $record->status,
+                            ]);
+                            
+                            try {
+                                $record->update(['status' => 'shipped']);
+                                
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Status atualizado para Enviado')
+                                    ->success()
+                                    ->send();
+                            } catch (\Exception $e) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Erro ao atualizar status')
+                                    ->body($e->getMessage())
+                                    ->danger()
+                                    ->send();
+                            }
+                        })
+                        ->visible(fn (Order $record) => $record->status !== 'shipped'),
+                    Tables\Actions\Action::make('marcar_entregue')
+                        ->label('Marcar como Entregue')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->action(function (Order $record) {
+                            \Illuminate\Support\Facades\Log::info('Ação marcar_entregue INICIADA', [
+                                'order_id' => $record->id,
+                                'current_status' => $record->status,
+                            ]);
+                            
+                            try {
+                                $record->update(['status' => 'delivered']);
+                                
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Status atualizado para Entregue')
+                                    ->success()
+                                    ->send();
+                            } catch (\Exception $e) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Erro ao atualizar status')
+                                    ->body($e->getMessage())
+                                    ->danger()
+                                    ->send();
+                            }
+                        })
+                        ->visible(fn (Order $record) => $record->status !== 'delivered'),
+                    Tables\Actions\Action::make('cancelar')
+                        ->label('Cancelar Pedido')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('danger')
+                        ->requiresConfirmation() // Mantém confirmação apenas para cancelar
+                        ->action(function (Order $record) {
+                            \Illuminate\Support\Facades\Log::info('Ação cancelar INICIADA', [
+                                'order_id' => $record->id,
+                                'current_status' => $record->status,
+                            ]);
+                            
+                            try {
+                                $record->update(['status' => 'cancelled']);
+                                
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Pedido cancelado')
+                                    ->success()
+                                    ->send();
+                            } catch (\Exception $e) {
+                                \Filament\Notifications\Notification::make()
+                                    ->title('Erro ao cancelar pedido')
+                                    ->body($e->getMessage())
+                                    ->danger()
+                                    ->send();
+                            }
+                        })
+                        ->visible(fn (Order $record) => $record->status !== 'cancelled'),
+                ])
+                ->label('Alterar Status')
+                ->icon('heroicon-o-arrow-path')
+                ->color('gray')
+                ->button(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

@@ -16,6 +16,8 @@ class Order extends Model
         'endereco_id',
         'status',
         'total_amount',
+        'shipping_cost',
+        'shipping_service',
         'payment_method',
         'payment_id',
     ];

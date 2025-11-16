@@ -32,24 +32,15 @@
                 </div>
             @endif
 
-            {{-- Formulário Add Carrinho --}}
-            <form action="{{ route('cart.store', $product) }}" method="POST" class="mb-3" id="add-to-cart-form"> {{-- Adicionado ID --}}
-                @csrf
-                <div class="d-flex align-items-center gap-3">
-                    {{-- Input de Quantidade --}}
-                    <input type="number" name="quantity" id="quantity-input" value="1" min="1" class="form-control" style="width: 80px;" required>
-
-                    <button type="submit" class="btn btn-outline-warning btn-lg fw-bold text-uppercase flex-grow-1"> {{-- flex-grow-1 para ocupar espaço --}}
-                        <i class="bi bi-cart-plus-fill me-2"></i> Adicionar
-                    </button>
-                </div>
-            </form>
+            {{-- Componente Livewire AddToCart --}}
+            <div class="mb-3">
+                <livewire:add-to-cart :product-id="$product->id" :key="'cart-' . $product->id" />
+            </div>
 
             {{-- Formulário Comprar Agora --}}
             <form action="{{ route('checkout.buyNow', $product) }}" method="POST">
                 @csrf
-                {{-- Input oculto para quantidade (será atualizado via JS) --}}
-                <input type="hidden" name="quantity" id="buy-now-quantity" value="1">
+                <input type="hidden" name="quantity" value="1">
 
                 <div class="d-grid"> {{-- Botão ocupa largura total --}}
                     <button type="submit" class="btn btn-warning btn-lg text-white fw-bold text-uppercase">
@@ -96,20 +87,4 @@
 </style>
 @endpush
 
-{{-- Script para sincronizar a quantidade entre os formulários --}}
-@push('scripts')
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const quantityInput = document.getElementById('quantity-input');
-        const buyNowQuantityInput = document.getElementById('buy-now-quantity');
-
-        if (quantityInput && buyNowQuantityInput) {
-            quantityInput.addEventListener('change', function() {
-                buyNowQuantityInput.value = this.value;
-            });
-            // Garante que o valor inicial esteja sincronizado
-             buyNowQuantityInput.value = quantityInput.value;
-        }
-    });
-</script>
-@endpush
+{{-- Script removido: não é mais necessário com Livewire --}}
