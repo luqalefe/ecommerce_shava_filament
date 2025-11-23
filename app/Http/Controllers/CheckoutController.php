@@ -307,20 +307,15 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Exibe a página de sucesso APÓS o pagamento ser confirmado
-     * (O usuário será redirecionado para cá pela Abacate Pay via completionUrl).
+     * Redireciona para Meus Pedidos após retorno do gateway de pagamento
+     * (O usuário será redirecionado para cá pela Abacate Pay ou Mercado Pago).
      * Rota: GET /checkout/pedido-realizado
      * Nome: checkout.success
      */
     public function success(Request $request)
     {
-        $user = Auth::user();
-        $lastOrder = $user->orders()->latest()->first();
-
-        return view('checkout.success', [
-            'order' => $lastOrder
-        ]);
-        // A view 'checkout.success' precisará ser adaptada.
+        // Redireciona diretamente para Meus Pedidos
+        return redirect()->route('orders.index')->with('success', 'Pedido realizado com sucesso!');
     }
 
 

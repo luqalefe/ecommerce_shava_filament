@@ -45,9 +45,9 @@ FRENET_API_TOKEN=seu_token_aqui
 FRENET_CEP_ORIGEM=69921248
 ABACATEPAY_API_KEY=sua_chave_aqui
 
-# Stripe (Test Mode)
-STRIPE_KEY=pk_test_sua_chave_publica
-STRIPE_SECRET=sk_test_sua_chave_secreta
+# Mercado Pago
+MERCADOPAGO_ACCESS_TOKEN=APP_USR-sua_chave_aqui
+MERCADOPAGO_PUBLIC_KEY=APP_USR-sua_chave_aqui
 
 # Google OAuth
 GOOGLE_CLIENT_ID=seu_client_id

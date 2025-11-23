@@ -138,7 +138,7 @@ class MercadoPagoService
             $rootUrl = rtrim($rootUrl, '/');
             
             // Construir URLs explicitamente concatenando com APP_URL
-            // Usando as rotas definidas em routes/web.php
+            // Redireciona diretamente para Meus Pedidos após pagamento
             $backUrls = [
                 'success' => $rootUrl . '/checkout/pedido-realizado',
                 'failure' => $rootUrl . '/checkout?status=failure',

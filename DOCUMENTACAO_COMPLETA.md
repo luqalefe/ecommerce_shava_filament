@@ -31,7 +31,7 @@ O **E-commerce Shava** é uma plataforma completa de vendas online desenvolvida 
 - **Banco de Dados**: MySQL/MariaDB
 - **Cache**: Redis (opcional)
 - **Queue**: Redis/Database
-- **Pagamentos**: Abacate Pay (PIX), Stripe (Cartão)
+- **Pagamentos**: Abacate Pay (PIX), Mercado Pago (Cartão/Pix)
 - **Frete**: Frenet API
 - **Autenticação**: Laravel Sanctum + Socialite (Google)
 
@@ -131,8 +131,8 @@ DB_USERNAME=root
 DB_PASSWORD=
 
 # Configurações de Pagamento
-STRIPE_KEY=pk_test_...
-STRIPE_SECRET=sk_test_...
+MERCADOPAGO_ACCESS_TOKEN=APP_USR-...
+MERCADOPAGO_PUBLIC_KEY=APP_USR-...
 ABACATEPAY_API_KEY=abc_dev_...
 
 # Configurações de Frete
@@ -352,7 +352,7 @@ ecommerce_shava/
 
 #### Métodos de Pagamento
 - **PIX (Abacate Pay)**: Geração de QR Code
-- **Cartão de Crédito (Stripe)**: Processamento seguro
+- **Mercado Pago (Cartão/Pix)**: Checkout Pro com redirect
 - **Boleto**: Futura implementação
 
 ### 4. Cálculo de Frete
@@ -413,22 +413,22 @@ ecommerce_shava/
 https://seusite.com/webhook/abacatepay
 ```
 
-### 2. Stripe (Cartão de Crédito)
+### 2. Mercado Pago (Cartão/Pix)
 
 #### Configuração
 ```php
 // config/services.php
-'stripe' => [
-    'key' => env('STRIPE_KEY'),
-    'secret' => env('STRIPE_SECRET'),
+'mercadopago' => [
+    'access_token' => env('MERCADOPAGO_ACCESS_TOKEN'),
+    'public_key' => env('MERCADOPAGO_PUBLIC_KEY'),
 ],
 ```
 
 #### Funcionalidades
-- Payment Intent
-- 3D Secure
-- Salvar cartões
-- Recuperação de pagamento
+- Checkout Pro (redirect)
+- Suporte para Cartão de Crédito e Pix
+- API de Orders
+- Webhooks para confirmação
 
 ### 3. Frenet (Frete)
 
@@ -514,8 +514,8 @@ POST /api/cart/add        -> CartController@apiAdd
 DELETE /api/cart/{id}     -> CartController@apiRemove
 
 // Webhooks
-POST /api/webhook/stripe  -> StripeWebhookController
-POST /api/webhook/abacate -> AbacateWebhookController
+POST /api/webhook/mercadopago -> MercadoPagoWebhookController
+POST /api/webhook/abacate     -> AbacateWebhookController
 ```
 
 ### Livewire Components

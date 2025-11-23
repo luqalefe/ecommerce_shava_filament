@@ -40,20 +40,15 @@ return [
         'seller_postcode' => env('FRENET_CEP_ORIGEM'),
     ],
 
-        'google' => [
-            'client_id' => env('GOOGLE_CLIENT_ID'),
-            'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-            'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL', 'http://127.0.0.1:8000') . '/auth/google/callback'),
-        ],
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL', 'http://127.0.0.1:8000') . '/auth/google/callback'),
+    ],
 
-        'stripe' => [
-            'key' => env('STRIPE_KEY'),
-            'secret' => env('STRIPE_SECRET'),
-        ],
-
-        'mercadopago' => [
-            'access_token' => env('MERCADOPAGO_ACCESS_TOKEN'),
-            'public_key' => env('MERCADOPAGO_PUBLIC_KEY'),
-        ],
+    'mercadopago' => [
+        'access_token' => env('MERCADOPAGO_ACCESS_TOKEN'),
+        'public_key' => env('MERCADOPAGO_PUBLIC_KEY'),
+    ],
 
 ];
