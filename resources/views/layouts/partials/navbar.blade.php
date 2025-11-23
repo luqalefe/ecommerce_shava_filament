@@ -29,7 +29,7 @@
 
         {{-- 3. Links do Menu Principal (Desktop - Centralizado) --}}
         <div class="hidden lg:flex lg:flex-1 lg:justify-center lg:gap-x-6">
-            
+
             {{-- Loop pelas Categorias Globais --}}
             @if(isset($globalCategories) && $globalCategories->isNotEmpty())
                 @foreach ($globalCategories as $category)
@@ -147,12 +147,12 @@
                 </div>
             @else
                 {{-- Link Minha Conta (quando não logado) --}}
-                <a href="{{ route('login') }}" class="p-1 hover:text-[var(--sh-muted-gold)]" title="Minha Conta">
-                    <span class="sr-only">Minha Conta</span>
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                    </svg>
-                </a>
+            <a href="{{ route('login') }}" class="p-1 hover:text-[var(--sh-muted-gold)]" title="Minha Conta">
+                <span class="sr-only">Minha Conta</span>
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                </svg>
+            </a>
             @endauth
             
             {{-- SEPARADOR --}}
@@ -171,7 +171,7 @@
     {{-- 5. Menu Mobile (Colapsável) --}}
     <div x-show="openMobileMenu" @click.away="openMobileMenu = false" class="lg:hidden" x-transition>
         <div class="space-y-1 px-2 pb-3 pt-2">
-            
+
             {{-- Loop pelas Categorias Globais (Mobile) --}}
             @if(isset($globalCategories) && $globalCategories->isNotEmpty())
                 @foreach ($globalCategories as $category)
@@ -240,8 +240,8 @@
                     </form>
                 @else
                     <a href="{{ route('login') }}" class="block rounded-md px-3 py-2 text-base font-medium hover:bg-[var(--sh-cream)] transition-colors">
-                        Minha Conta
-                    </a>
+                    Minha Conta
+                </a>
                 @endauth
                 <a href="{{ route('cart.index') }}" class="block rounded-md px-3 py-2 text-base font-medium hover:bg-[var(--sh-cream)] transition-colors">
                     Carrinho

@@ -1,0 +1,37 @@
+# Arquivo de exemplo para docker-compose.override.yml
+# Copie este arquivo para docker-compose.override.yml e ajuste conforme necessário
+# Este arquivo permite sobrescrever configurações do docker-compose.yml sem modificar o arquivo original
+
+version: '3.8'
+
+services:
+  app:
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+    volumes:
+      - ./:/var/www/html
+      # Descomente para usar Xdebug
+      # - ./docker/php/xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+
+  nginx:
+    ports:
+      - "8000:80"
+    # Descomente para adicionar SSL
+    # volumes:
+    #   - ./docker/nginx/ssl:/etc/nginx/ssl
+
+  db:
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=shava_ecommerce
+    ports:
+      - "3306:3306"
+    # Ajuste recursos se necessário
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 1G
+    #     reservations:
+    #       memory: 512M
+

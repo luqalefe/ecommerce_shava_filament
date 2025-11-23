@@ -15,8 +15,8 @@ class EnsureUserIsAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check() || !auth()->user()->is_admin) {
-            abort(403, 'Acesso negado. Apenas administradores podem acessar esta área.');
+        if (!auth()->check() || !auth()->user()->canAccessAdmin()) {
+            abort(403, 'Acesso negado. Apenas administradores e usuários de logística podem acessar esta área.');
         }
 
         return $next($request);

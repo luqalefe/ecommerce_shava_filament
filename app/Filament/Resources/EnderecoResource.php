@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class EnderecoResource extends Resource
 {
@@ -18,6 +19,8 @@ class EnderecoResource extends Resource
     protected static ?string $pluralModelLabel = 'Endereços';
     protected static ?string $navigationGroup = 'Loja';
     protected static ?string $navigationIcon = 'heroicon-o-map-pin';
+
+    
 
     public static function form(Form $form): Form
     {
@@ -63,5 +66,14 @@ class EnderecoResource extends Resource
             'create' => Pages\CreateEndereco::route('/create'),
             'edit' => Pages\EditEndereco::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Verifica se o recurso deve aparecer no menu de navegação
+     * Apenas administradores podem gerenciar endereços
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user() && Auth::user()->isAdmin();
     }
 }

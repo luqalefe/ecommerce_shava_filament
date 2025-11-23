@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 
 class UserResource extends Resource
 {
@@ -49,6 +50,20 @@ class UserResource extends Resource
                 Forms\Components\TextInput::make('celular')
                     ->label('Celular')
                     ->maxLength(20),
+                Forms\Components\Select::make('role')
+                    ->label('Perfil')
+                    ->options([
+                        'user' => 'Usuário',
+                        'logistica' => 'Logística',
+                        'admin' => 'Administrador',
+                    ])
+                    ->default('user')
+                    ->required()
+                    ->visible(fn () => Auth::user() && Auth::user()->isAdmin()),
+                Forms\Components\Toggle::make('is_admin')
+                    ->label('É Administrador')
+                    ->default(false)
+                    ->visible(fn () => Auth::user() && Auth::user()->isAdmin()),
             ]);
     }
 
@@ -70,6 +85,22 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('celular')
                     ->label('Celular')
                     ->searchable(),
+                Tables\Columns\TextColumn::make('role')
+                    ->label('Perfil')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'admin' => 'danger',
+                        'logistica' => 'info',
+                        'user' => 'gray',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'admin' => 'Administrador',
+                        'logistica' => 'Logística',
+                        'user' => 'Usuário',
+                        default => $state,
+                    })
+                    ->visible(fn () => Auth::user() && Auth::user()->isAdmin()),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Criado em')
                     ->dateTime('d/m/Y H:i')
@@ -104,5 +135,14 @@ class UserResource extends Resource
             'create' => Pages\CreateUser::route('/create'),
             'edit' => Pages\EditUser::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Verifica se o recurso deve aparecer no menu de navegação
+     * Apenas administradores podem gerenciar usuários
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user() && Auth::user()->isAdmin();
     }
 }

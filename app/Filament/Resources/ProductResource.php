@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 
 class ProductResource extends Resource
 {
@@ -162,5 +163,14 @@ class ProductResource extends Resource
             'create' => Pages\CreateProduct::route('/create'),
             'edit' => Pages\EditProduct::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Verifica se o recurso deve aparecer no menu de navegação
+     * Apenas administradores podem gerenciar produtos
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user() && Auth::user()->isAdmin();
     }
 }

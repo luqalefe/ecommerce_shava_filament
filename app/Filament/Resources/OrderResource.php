@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class OrderResource extends Resource
 {
@@ -23,8 +24,28 @@ class OrderResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
+        $user = Auth::user();
+        $isLogistica = $user && $user->isLogistica();
+
+        $schema = [];
+
+        // Se for logística, só pode editar status
+        if ($isLogistica) {
+            $schema[] = Forms\Components\Select::make('status')
+                ->label('Status')
+                ->options([
+                    'pending' => 'Pendente',
+                    'processing' => 'Processando',
+                    'shipped' => 'Enviado',
+                    'delivered' => 'Entregue',
+                    'cancelled' => 'Cancelado',
+                ])
+                ->required()
+                ->searchable()
+                ->live();
+        } else {
+            // Admin pode editar todos os campos
+            $schema = [
                 Forms\Components\Select::make('user_id')
                     ->label('Cliente')
                     ->relationship('user', 'name')
@@ -71,7 +92,10 @@ class OrderResource extends Resource
                 Forms\Components\TextInput::make('payment_id')
                     ->label('ID do Pagamento')
                     ->maxLength(255),
-            ]);
+            ];
+        }
+
+        return $form->schema($schema);
     }
 
     public static function table(Table $table): Table
@@ -130,7 +154,8 @@ class OrderResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn () => Auth::user() && Auth::user()->isAdmin()),
                 Tables\Actions\ActionGroup::make([
                     Tables\Actions\Action::make('marcar_processando')
                         ->label('Marcar como Processando')
@@ -255,7 +280,8 @@ class OrderResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn () => Auth::user() && Auth::user()->isAdmin()),
                 ]),
             ]);
     }
@@ -272,8 +298,16 @@ class OrderResource extends Resource
         return [
             'index' => Pages\ListOrders::route('/'),
             'create' => Pages\CreateOrder::route('/create'),
-            'view' => Pages\ViewOrder::route('/{record}'), // RESTAURADO
+            'view' => Pages\ViewOrder::route('/{record}'),
             'edit' => Pages\EditOrder::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Verifica se o recurso deve aparecer no menu de navegação
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user() && Auth::user()->canAccessAdmin();
     }
 }

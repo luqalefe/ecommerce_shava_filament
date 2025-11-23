@@ -9,6 +9,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class ReviewResource extends Resource
 {
@@ -121,5 +122,14 @@ class ReviewResource extends Resource
             'create' => Pages\CreateReview::route('/create'),
             'edit' => Pages\EditReview::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Verifica se o recurso deve aparecer no menu de navegação
+     * Apenas administradores podem gerenciar avaliações
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return Auth::user() && Auth::user()->isAdmin();
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Services\FrenetService;
+use App\Services\MercadoPagoService;
 use App\Models\Endereco;
 use App\Models\Order;
 use Darryldecode\Cart\Facades\CartFacade as Cart;
@@ -19,6 +20,7 @@ class CheckoutPage extends Component
     public $rua = '';
     public $numero = '';
     public $complemento = '';
+    public $bairro = '';
     public $cidade = '';
     public $estado = '';
     public $cep = '';
@@ -31,6 +33,8 @@ class CheckoutPage extends Component
     public $paymentMethod = 'pix';
     
     public $loading = false;
+    public $loadingCep = false; // Loading específico para busca de CEP
+    public $summaryExpanded = false; // Para controlar resumo no mobile
     
     protected $frenetService;
 
@@ -49,58 +53,123 @@ class CheckoutPage extends Component
     }
 
     /**
-     * Quando o CEP é atualizado, busca endereço e calcula frete automaticamente
+     * Quando o CEP é atualizado, busca endereço automaticamente
+     * Dispara quando o CEP atinge 8 dígitos
      */
     public function updatedCep()
     {
         $cep = preg_replace('/\D/', '', $this->cep);
         
         if (strlen($cep) === 8) {
-            $this->loading = true;
-            $this->resetErrorBag('cep');
-            
-            // Busca endereço e calcula frete em paralelo
-            $this->searchAddressAndCalculateShipping($cep);
+            $this->searchAddress($cep);
         } else {
-            // Limpa tudo se o CEP não estiver completo
-            $this->clearShipping();
+            // Limpa endereço se o CEP não estiver completo
+            if (strlen($cep) < 8) {
+                $this->clearAddress();
+            }
         }
     }
 
     /**
-     * Busca endereço e calcula frete automaticamente
+     * Busca endereço via ViaCEP quando o usuário sai do campo CEP
+     * Disparado via @blur no frontend
      */
-    private function searchAddressAndCalculateShipping($cep)
+    public function searchAddressOnBlur()
     {
+        $cep = preg_replace('/\D/', '', $this->cep);
+        
+        if (strlen($cep) === 8) {
+            $this->searchAddress($cep);
+        } elseif (strlen($cep) > 0 && strlen($cep) < 8) {
+            $this->addError('cep', 'CEP deve conter 8 dígitos.');
+        }
+    }
+
+    /**
+     * Busca endereço via ViaCEP e preenche os campos automaticamente
+     */
+    public function searchAddress($cep = null)
+    {
+        if ($cep === null) {
+            $cep = preg_replace('/\D/', '', $this->cep);
+        }
+
+        // Validação: CEP deve ter exatamente 8 dígitos
+        if (strlen($cep) !== 8) {
+            return;
+        }
+
+        $this->loadingCep = true;
+        $this->resetErrorBag('cep');
+
         try {
-            // 1. Buscar endereço via ViaCEP
-            $response = Http::get("https://viacep.com.br/ws/{$cep}/json/");
+            // Requisição GET para ViaCEP
+            $response = Http::timeout(5)->get("https://viacep.com.br/ws/{$cep}/json/");
+            
+            if (!$response->successful()) {
+                throw new \Exception('Erro na requisição à API ViaCEP');
+            }
+
             $data = $response->json();
 
-            if (isset($data['erro']) || !isset($data['logradouro'])) {
-                $this->addError('cep', 'CEP não encontrado.');
-                $this->loading = false;
+            // Verifica se há erro na resposta
+            if (isset($data['erro']) && $data['erro'] === true) {
+                $this->addError('cep', 'CEP não encontrado. Verifique o CEP digitado.');
+                $this->loadingCep = false;
+                return;
+            }
+
+            // Verifica se logradouro existe (indica sucesso)
+            if (!isset($data['logradouro']) || empty($data['logradouro'])) {
+                $this->addError('cep', 'CEP não encontrado ou inválido.');
+                $this->loadingCep = false;
                 return;
             }
 
             // Preenche os campos automaticamente
             $this->rua = $data['logradouro'] ?? '';
+            $this->bairro = $data['bairro'] ?? '';
             $this->cidade = $data['localidade'] ?? '';
-            $this->estado = $data['uf'] ?? '';
+            $this->estado = strtoupper($data['uf'] ?? '');
             $this->complemento = $data['complemento'] ?? '';
 
-            // 2. Calcula o frete automaticamente
+            // Normaliza o CEP no formato exibido
+            $this->cep = substr($cep, 0, 5) . '-' . substr($cep, 5);
+
+            // Calcula o frete automaticamente após preencher o endereço
             $this->calculateShipping($cep);
+
+            // Dispara evento JavaScript para focar no campo número
+            $this->dispatch('address-filled');
+
+            $this->loadingCep = false;
             
         } catch (\Exception $e) {
             $this->addError('cep', 'Erro ao buscar CEP. Tente novamente.');
-            $this->loading = false;
-            Log::error('Erro ao buscar CEP: ' . $e->getMessage());
+            $this->loadingCep = false;
+            Log::error('Erro ao buscar CEP: ' . $e->getMessage(), [
+                'cep' => $cep,
+                'exception' => $e->getTraceAsString()
+            ]);
         }
     }
 
     /**
+     * Limpa os campos de endereço
+     */
+    private function clearAddress()
+    {
+        $this->rua = '';
+        $this->bairro = '';
+        $this->cidade = '';
+        $this->estado = '';
+        $this->complemento = '';
+        $this->clearShipping();
+    }
+
+    /**
      * Calcula o frete usando FrenetService
+     * Chamado automaticamente após buscar o endereço
      */
     private function calculateShipping($cep)
     {
@@ -108,17 +177,18 @@ class CheckoutPage extends Component
         $valorTotal = Cart::getSubTotal();
         
         if ($cartItems->isEmpty()) {
-            $this->addError('cep', 'Carrinho vazio');
             $this->loading = false;
             return;
         }
 
+        $this->loading = true;
+
         $itemsParaCotacao = [];
         foreach ($cartItems as $cartItem) {
             if (!$cartItem->associatedModel) {
-                $this->addError('cep', "Erro: O item {$cartItem->name} não possui dados de produto para frete.");
                 $this->loading = false;
-                return;
+                Log::warning("Item {$cartItem->name} não possui dados de produto para frete.");
+                continue;
             }
             
             $product = $cartItem->associatedModel;
@@ -131,6 +201,11 @@ class CheckoutPage extends Component
                 'length' => (float) ($product->length ?? 10),
                 'category' => 'Geral'
             ];
+        }
+
+        if (empty($itemsParaCotacao)) {
+            $this->loading = false;
+            return;
         }
 
         try {
@@ -162,6 +237,7 @@ class CheckoutPage extends Component
         $this->shippingCost = 0;
         $this->shippingService = '';
         $this->loading = false;
+        $this->loadingCep = false;
     }
 
     /**
@@ -180,19 +256,34 @@ class CheckoutPage extends Component
     }
 
     /**
+     * Toggle do resumo no mobile
+     */
+    public function toggleSummary()
+    {
+        $this->summaryExpanded = !$this->summaryExpanded;
+    }
+
+    /**
      * Finaliza o pedido e cria a cobrança na Abacate Pay
      */
     public function placeOrder()
     {
+        // Validação customizada para CEP (remove caracteres não numéricos antes de validar)
+        $cepClean = preg_replace('/\D/', '', $this->cep);
+        
         $this->validate([
             'rua' => 'required|string|min:3',
             'numero' => 'required|string',
             'cidade' => 'required|string|min:2',
             'estado' => 'required|string|size:2',
-            'cep' => 'required|string|size:8',
+            'cep' => ['required', 'string', function ($attribute, $value, $fail) use ($cepClean) {
+                if (strlen($cepClean) !== 8) {
+                    $fail('O campo CEP deve conter 8 dígitos.');
+                }
+            }],
             'shippingService' => 'required|string',
             'shippingCost' => 'required|numeric|min:0',
-            'paymentMethod' => 'required|string|in:pix',
+            'paymentMethod' => 'required|string|in:pix,mercadopago',
         ], [
             'rua.required' => 'O campo rua é obrigatório.',
             'numero.required' => 'O campo número é obrigatório.',
@@ -239,7 +330,7 @@ class CheckoutPage extends Component
             ]);
 
             // Adicionar itens ao pedido
-            $productsPayload = [];
+            $cartItemsArray = [];
             foreach ($cartItems as $item) {
                 $order->items()->create([
                     'product_id' => $item->id,
@@ -247,6 +338,112 @@ class CheckoutPage extends Component
                     'price' => $item->price,
                 ]);
 
+                $cartItemsArray[] = [
+                    'id' => (string) $item->id,
+                    'name' => $item->name,
+                    'quantity' => $item->quantity,
+                    'price' => (float) $item->price,
+                ];
+            }
+
+            // Processar pagamento baseado no método selecionado
+            if ($this->paymentMethod === 'mercadopago') {
+                // Processar com Mercado Pago
+                return $this->processMercadoPagoPayment($order, $cartItemsArray, $shippingCost, $user, $endereco);
+            } else {
+                // Processar com Abacate Pay (PIX) - código original
+                return $this->processAbacatePayPayment($order, $cartItems, $shippingCost, $user);
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Erro no Checkout: ' . $e->getMessage(), [
+                'exception' => $e->getTraceAsString(),
+                'payment_method' => $this->paymentMethod ?? 'unknown',
+            ]);
+            
+            // Exibir erro de forma mais visível no Livewire
+            $this->addError('payment', 'Não foi possível processar seu pedido. ' . $e->getMessage());
+            
+            // Também adicionar na sessão para compatibilidade
+            session()->flash('error', 'Não foi possível processar seu pedido. ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Processa pagamento via Mercado Pago
+     */
+    private function processMercadoPagoPayment($order, array $cartItemsArray, float $shippingCost, $user, $endereco)
+    {
+        try {
+            $mercadopagoService = app(MercadoPagoService::class);
+
+            // Preparar dados do pagador
+            $payerData = [
+                'name' => $user->name,
+                'email' => $user->email,
+                'cpf' => $user->cpf ?? null,
+                'phone' => $user->celular ?? null,
+                'address' => [
+                    'street' => $endereco->rua,
+                    'number' => $endereco->numero,
+                    'zip_code' => $endereco->cep,
+                ],
+            ];
+
+            Log::info('Criando preferência Mercado Pago', [
+                'order_id' => $order->id,
+                'items_count' => count($cartItemsArray),
+                'shipping_cost' => $shippingCost,
+            ]);
+
+            // Criar preferência no Mercado Pago
+            $preference = $mercadopagoService->createPreference(
+                $cartItemsArray,
+                $shippingCost,
+                $payerData,
+                $order->id
+            );
+
+            if (empty($preference['init_point'])) {
+                throw new \Exception('URL de checkout do Mercado Pago não foi retornada. Verifique os logs para mais detalhes.');
+            }
+
+            // Salvar o ID da preferência no pedido
+            $order->update([
+                'payment_id' => $preference['preference_id'],
+            ]);
+
+            DB::commit();
+            Cart::clear();
+
+            Log::info('Redirecionando para Mercado Pago', [
+                'preference_id' => $preference['preference_id'],
+                'init_point' => $preference['init_point'],
+            ]);
+
+            // Redirecionar para o checkout do Mercado Pago
+            return redirect()->away($preference['init_point']);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Erro ao processar pagamento Mercado Pago', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'order_id' => $order->id ?? null,
+            ]);
+            throw $e; // Re-throw para ser capturado no método principal
+        }
+    }
+
+    /**
+     * Processa pagamento via Abacate Pay (PIX)
+     */
+    private function processAbacatePayPayment($order, $cartItems, float $shippingCost, $user)
+    {
+        try {
+            // Preparar payload para Abacate Pay
+            $productsPayload = [];
+            foreach ($cartItems as $item) {
                 $productsPayload[] = [
                     'externalId' => (string) $item->id,
                     'name' => $item->name,
@@ -344,8 +541,8 @@ class CheckoutPage extends Component
             }
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Erro no Checkout: ' . $e->getMessage());
-            session()->flash('error', 'Não foi possível processar seu pedido. ' . $e->getMessage());
+            Log::error('Erro ao processar pagamento Abacate Pay: ' . $e->getMessage());
+            throw $e;
         }
     }
 

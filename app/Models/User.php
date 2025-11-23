@@ -26,6 +26,7 @@ class User extends Authenticatable
         'celular',
         'cpf',
         'is_admin',
+        'role',
     ];
     // Dentro da classe User
 
@@ -61,5 +62,29 @@ class User extends Authenticatable
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Verifica se o usuário é administrador
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin' || $this->is_admin === true;
+    }
+
+    /**
+     * Verifica se o usuário é da logística
+     */
+    public function isLogistica(): bool
+    {
+        return $this->role === 'logistica';
+    }
+
+    /**
+     * Verifica se o usuário tem acesso ao painel admin
+     */
+    public function canAccessAdmin(): bool
+    {
+        return $this->isAdmin() || $this->isLogistica();
     }
 }
