@@ -8,6 +8,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SitemapController;
 
 /*
 |--------------------------------------------------------------------------
@@ -17,8 +18,11 @@ use App\Http\Controllers\ProfileController;
 
 // --- ROTAS PÚBLICAS DA LOJA ---
 
-// Home (ainda não migrado para Livewire - manter por enquanto)
-Route::get('/', [HomeController::class, 'index'])->name('home');
+// Sitemap para SEO
+Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
+
+// Home (Livewire)
+Route::get('/', \App\Livewire\HomePage::class)->name('home');
 
 // Sobre Nós (Livewire)
 Route::get('/sobre-nos', \App\Livewire\AboutPage::class)->name('about');

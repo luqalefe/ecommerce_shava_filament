@@ -84,3 +84,5 @@ echo "3. Siga as instruções do GUIA_DEPLOY_HOSTINGER.md"
 echo ""
 echo -e "${GREEN}✨ Preparação concluída!${NC}"
 
+
+

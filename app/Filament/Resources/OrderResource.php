@@ -179,6 +179,8 @@ class OrderResource extends Resource
                                     ->title('Status atualizado para Processando')
                                     ->success()
                                     ->send();
+                                    
+                                return redirect()->route('filament.admin.resources.orders.index');
                             } catch (\Exception $e) {
                                 \Illuminate\Support\Facades\Log::error('Erro ao atualizar status', [
                                     'order_id' => $record->id,
@@ -210,6 +212,8 @@ class OrderResource extends Resource
                                     ->title('Status atualizado para Enviado')
                                     ->success()
                                     ->send();
+                                    
+                                return redirect()->route('filament.admin.resources.orders.index');
                             } catch (\Exception $e) {
                                 \Filament\Notifications\Notification::make()
                                     ->title('Erro ao atualizar status')
@@ -236,6 +240,8 @@ class OrderResource extends Resource
                                     ->title('Status atualizado para Entregue')
                                     ->success()
                                     ->send();
+                                    
+                                return redirect()->route('filament.admin.resources.orders.index');
                             } catch (\Exception $e) {
                                 \Filament\Notifications\Notification::make()
                                     ->title('Erro ao atualizar status')
@@ -263,6 +269,8 @@ class OrderResource extends Resource
                                     ->title('Pedido cancelado')
                                     ->success()
                                     ->send();
+                                    
+                                return redirect()->route('filament.admin.resources.orders.index');
                             } catch (\Exception $e) {
                                 \Filament\Notifications\Notification::make()
                                     ->title('Erro ao cancelar pedido')

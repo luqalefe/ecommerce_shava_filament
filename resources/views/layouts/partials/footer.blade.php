@@ -1,6 +1,6 @@
 {{-- resources/views/layouts/partials/footer.blade.php --}}
-{{-- REFATORADO para TailwindCSS - Design Clean e Místico --}}
-<footer class="relative overflow-hidden bg-gradient-to-b from-white to-[var(--sh-cream)] border-t border-[var(--sh-border)]" style="color: var(--sh-dark-text);">
+{{-- REFATORADO para Organic Light Theme --}}
+<footer class="relative overflow-hidden bg-[#F5F5F4] border-t border-[#E7E5E4]" style="color: #44403C;">
     
     <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         

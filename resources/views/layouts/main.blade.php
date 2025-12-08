@@ -3,7 +3,33 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'Shava Haux')</title>
+    <title>@yield('title', 'Shava Haux - Headshop e Tabacaria em Rio Branco')</title>
+
+    {{-- SEO Meta Tags --}}
+    <meta name="description" content="@yield('meta_description', 'Shava Haux - Headshop e tabacaria em Rio Branco, Acre. Sedas, pipes, dichavadores, roupas de cânhamo e artigos exclusivos. Frete grátis em Rio Branco. Entrega rápida!')">
+    <meta name="keywords" content="@yield('meta_keywords', 'headshop rio branco, tabacaria acre, sedas, pipes, dichavador, artigos de tabacaria, headshop acre, loja de seda, shava haux, hempwear, roupas de cânhamo')">
+    <meta name="author" content="Shava Haux">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ url()->current() }}">
+
+    {{-- Open Graph / Facebook --}}
+    <meta property="og:type" content="@yield('og_type', 'website')">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:title" content="@yield('og_title', 'Shava Haux - Headshop e Tabacaria em Rio Branco')">
+    <meta property="og:description" content="@yield('og_description', 'Headshop e tabacaria em Rio Branco. Sedas, pipes, dichavadores e artigos exclusivos. Frete grátis em Rio Branco!')">
+    <meta property="og:image" content="@yield('og_image', asset('images/shava_banner.png'))">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:site_name" content="Shava Haux">
+
+    {{-- Twitter Card --}}
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="@yield('og_title', 'Shava Haux - Headshop e Tabacaria em Rio Branco')">
+    <meta name="twitter:description" content="@yield('og_description', 'Headshop e tabacaria em Rio Branco. Sedas, pipes, dichavadores e artigos exclusivos.')">
+    <meta name="twitter:image" content="@yield('og_image', asset('images/shava_banner.png'))">
+
+    {{-- Favicon --}}
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/logo_shava.png') }}">
 
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
@@ -26,21 +52,27 @@
     <style>
         body { 
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
-            background-color: #FDF8F0; 
-            color: #403A30; 
+            background-color: #FAFAF9; 
+            color: #44403C; 
         }
         h1, h2, h3, h4, h5, h6 {
             font-family: 'Playfair Display', serif;
         }
         :root {
-            --sh-muted-gold: #B3AF8F; 
-            --sh-dark-text: #403A30; 
+            --sh-muted-gold: #A8947A; 
+            --sh-dark-text: #44403C; 
+            --sh-primary: #1C4532;
+            --sh-primary-hover: #15372A;
+            --sh-terracotta: #9A4F32;
             --sh-white: #FFFFFF; 
-            --sh-medium-bg: #EAE3D4;
+            --sh-cream: #FAFAF9;
+            --sh-stone-100: #F5F5F4;
+            --sh-stone-200: #E7E5E4;
+            --sh-border: #E7E5E4;
         }
         /* Carrossel (mantido para compatibilidade) */
         .hero-slide-image { width: 100%; height: 100%; background-size: cover; background-position: center; }
-        .carousel-caption { background: rgba(0, 0, 0, 0.4); inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white;}
+        .carousel-caption { background: rgba(0, 0, 0, 0.3); inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white;}
         .carousel-control-prev-icon, .carousel-control-next-icon { filter: invert(1) grayscale(100); }
         .carousel-indicators button { background-color: rgba(255, 255, 255, 0.5); border: 0; }
         .carousel-indicators .active { background-color: white; }
@@ -49,9 +81,10 @@
 </head>
 <body>
     @include('layouts.partials.navbar')
-    <main>
+    <main style="position: relative; z-index: 1;">
         @yield('content')
     </main>
+    @include('layouts.partials.bottom-nav')
     @include('layouts.partials.footer')
 
     {{-- Bootstrap JS Bundle (mantido para compatibilidade) --}}
@@ -59,6 +92,7 @@
     
     {{-- Livewire Scripts --}}
     @livewireScripts
+
 
     {{-- Script p5.js e Lógica do Footer --}}
     @push('scripts')

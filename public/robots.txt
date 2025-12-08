@@ -1,2 +1,14 @@
+# Shava Haux - Headshop e Tabacaria
+
 User-agent: *
-Disallow:
+Disallow: /admin/
+Disallow: /checkout/
+Disallow: /carrinho/
+Disallow: /meus-pedidos/
+Disallow: /profile/
+Disallow: /dashboard/
+Disallow: /login
+Disallow: /register
+
+# Sitemap
+Sitemap: https://shavahaux.com.br/sitemap.xml

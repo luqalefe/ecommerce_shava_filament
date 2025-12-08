@@ -144,7 +144,7 @@
                                 @php
                                     $product = $item->product;
                                     $imageUrl = $product && $product->images->isNotEmpty() 
-                                        ? asset('storage/' . $product->images->first()->image_path) 
+                                        ? asset('storage/' . $product->images->first()->path) 
                                         : 'https://via.placeholder.com/100';
                                 @endphp
                                 <img 

@@ -67,3 +67,5 @@ echo ✨ Preparação concluída!
 echo.
 pause
 
+
+

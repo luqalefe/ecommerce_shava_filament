@@ -111,6 +111,51 @@ class ProductResource extends Resource
                                     ->searchable(),
                             ]),
 
+                        Forms\Components\Section::make('Dimensões e Peso')
+                            ->description('Informações necessárias para cálculo de frete')
+                            ->schema([
+                                Forms\Components\TextInput::make('weight')
+                                    ->label('Peso (kg)')
+                                    ->numeric()
+                                    ->required()
+                                    ->minValue(0.01)
+                                    ->step(0.01)
+                                    ->suffix('kg')
+                                    ->default(0.5)
+                                    ->helperText('Peso do produto em quilogramas'),
+
+                                Forms\Components\Grid::make(3)
+                                    ->schema([
+                                        Forms\Components\TextInput::make('height')
+                                            ->label('Altura (cm)')
+                                            ->numeric()
+                                            ->required()
+                                            ->minValue(1)
+                                            ->step(0.1)
+                                            ->suffix('cm')
+                                            ->default(10),
+
+                                        Forms\Components\TextInput::make('width')
+                                            ->label('Largura (cm)')
+                                            ->numeric()
+                                            ->required()
+                                            ->minValue(1)
+                                            ->step(0.1)
+                                            ->suffix('cm')
+                                            ->default(10),
+
+                                        Forms\Components\TextInput::make('length')
+                                            ->label('Comprimento (cm)')
+                                            ->numeric()
+                                            ->required()
+                                            ->minValue(1)
+                                            ->step(0.1)
+                                            ->suffix('cm')
+                                            ->default(10),
+                                    ]),
+                            ])
+                            ->collapsible(),
+
                         Forms\Components\Section::make('Status')
                             ->schema([
                                 Forms\Components\Toggle::make('is_active')

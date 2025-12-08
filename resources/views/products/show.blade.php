@@ -1,6 +1,44 @@
 @extends('layouts.main')
 
-@section('title', $product->name)
+@section('title', $product->name . ' | Shava Haux - Headshop Rio Branco')
+
+@section('meta_description'){{ Str::limit(strip_tags($product->short_description ?? $product->long_description ?? 'Compre ' . $product->name . ' na Shava Haux. Headshop e tabacaria em Rio Branco com entrega rápida.'), 155) }}@endsection
+
+@section('meta_keywords', $product->name . ', ' . ($product->category->name ?? 'headshop') . ', headshop rio branco, tabacaria acre, shava haux, comprar online')
+
+@section('og_type', 'product')
+@section('og_title', $product->name . ' | Shava Haux')
+@section('og_description'){{ Str::limit(strip_tags($product->short_description ?? 'Compre na Shava Haux'), 100) }}@endsection
+@section('og_image'){{ $product->images->isNotEmpty() ? asset('storage/' . $product->images->first()->path) : asset('images/shava_banner.png') }}@endsection
+
+@push('styles')
+{{-- JSON-LD Product Schema --}}
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "{{ $product->name }}",
+    "description": "{{ Str::limit(strip_tags($product->short_description ?? $product->long_description ?? ''), 200) }}",
+    "image": "{{ $product->images->isNotEmpty() ? asset('storage/' . $product->images->first()->path) : asset('images/shava_banner.png') }}",
+    "sku": "{{ $product->sku ?? $product->id }}",
+    "brand": {
+        "@type": "Brand",
+        "name": "Shava Haux"
+    },
+    "offers": {
+        "@type": "Offer",
+        "url": "{{ url()->current() }}",
+        "priceCurrency": "BRL",
+        "price": "{{ number_format($product->price, 2, '.', '') }}",
+        "availability": "{{ $product->stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' }}",
+        "seller": {
+            "@type": "Organization",
+            "name": "Shava Haux"
+        }
+    }
+}
+</script>
+@endpush
 
 @section('content')
 <div class="container py-5">

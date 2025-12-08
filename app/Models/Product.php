@@ -28,6 +28,11 @@ class Product extends Model
         'sale_price',
         'is_active',
         'quantity',
+        // Campos para cálculo de frete (Frenet API)
+        'weight',
+        'height',
+        'width',
+        'length',
     ];
 
     /**
@@ -39,6 +44,11 @@ class Product extends Model
         'is_active' => 'boolean',
         'price' => 'decimal:2',
         'sale_price' => 'decimal:2',
+        // Campos de dimensões e peso para frete
+        'weight' => 'decimal:2',
+        'height' => 'decimal:2',
+        'width' => 'decimal:2',
+        'length' => 'decimal:2',
     ];
 
     /**

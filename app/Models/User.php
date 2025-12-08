@@ -27,6 +27,12 @@ class User extends Authenticatable
         'cpf',
         'is_admin',
         'role',
+        // Campos Pessoa Jurídica
+        'user_type',
+        'cnpj',
+        'razao_social',
+        'nome_fantasia',
+        'inscricao_estadual',
     ];
     // Dentro da classe User
 
@@ -86,5 +92,42 @@ class User extends Authenticatable
     public function canAccessAdmin(): bool
     {
         return $this->isAdmin() || $this->isLogistica();
+    }
+
+    /**
+     * Verifica se o usuário é Pessoa Física
+     */
+    public function isPessoaFisica(): bool
+    {
+        return $this->user_type === 'pf';
+    }
+
+    /**
+     * Verifica se o usuário é Pessoa Jurídica
+     */
+    public function isPessoaJuridica(): bool
+    {
+        return $this->user_type === 'pj';
+    }
+
+    /**
+     * Retorna o documento (CPF ou CNPJ) do usuário
+     */
+    public function getDocumento(): ?string
+    {
+        return $this->isPessoaFisica() ? $this->cpf : $this->cnpj;
+    }
+
+    /**
+     * Retorna o nome de exibição do usuário
+     * Para PJ: nome_fantasia ou razao_social
+     * Para PF: name
+     */
+    public function getDisplayName(): string
+    {
+        if ($this->isPessoaJuridica()) {
+            return $this->nome_fantasia ?? $this->razao_social ?? $this->name;
+        }
+        return $this->name;
     }
 }

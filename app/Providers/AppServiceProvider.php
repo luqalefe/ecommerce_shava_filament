@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 use App\Models\Category;
 use App\Models\Order;
 use App\Observers\OrderObserver;
@@ -26,6 +27,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Forçar HTTPS se APP_URL usar HTTPS (importante para túneis como Serveo, ngrok, etc)
+        $appUrl = config('app.url');
+        if ($appUrl && str_starts_with($appUrl, 'https://')) {
+            URL::forceScheme('https');
+        }
+
         // Tenta compartilhar as categorias com a view do navbar
         try {
             // Verifica se a tabela 'categories' existe no banco de dados.
