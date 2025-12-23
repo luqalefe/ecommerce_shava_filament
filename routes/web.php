@@ -36,8 +36,7 @@ Route::get('/categoria/{category:slug}', [CategoryController::class, 'show'])->n
 // Produto individual (ainda não migrado - manter)
 Route::get('/produto/{product:slug}', [ProductController::class, 'show'])->name('product.show');
 
-// Comprar Agora (pode manter ou migrar depois)
-Route::post('/comprar-agora/{product}', [CheckoutController::class, 'buyNow'])->name('checkout.buyNow');
+// Comprar Agora - movido para grupo auth (linha 59)
 
 // --- ROTAS DO CARRINHO ---
 
@@ -51,8 +50,23 @@ Route::get('/carrinho', \App\Livewire\CartPage::class)->name('cart.index');
 // Route::patch('/carrinho/atualizar/{item}', [CartController::class, 'update'])->name('cart.update');
 // Route::delete('/carrinho/remover/{item}', [CartController::class, 'destroy'])->name('cart.destroy');
 
+// --- ROTAS DE AUTENTICAÇÃO (Livewire Customizado) ---
+Route::get('/verify-email', \App\Livewire\Auth\VerifyEmailCode::class)
+    ->middleware('auth')
+    ->name('verification.notice');
+
+Route::get('/forgot-password', \App\Livewire\Auth\ResetPasswordWithCode::class)
+    ->name('password.request');
+
+Route::get('/change-password', \App\Livewire\Auth\ChangePassword::class)
+    ->middleware('auth')
+    ->name('password.change');
+
 // --- ROTAS QUE EXIGEM AUTENTICAÇÃO ---
 Route::middleware(['auth'])->group(function () {
+
+    // Comprar Agora (adiciona ao carrinho e vai direto pro checkout)
+    Route::post('/comprar-agora/{product}', [CheckoutController::class, 'buyNow'])->name('checkout.buyNow');
 
     // MODIFICADO: Checkout agora usa Livewire
     Route::get('/checkout', \App\Livewire\CheckoutPage::class)->name('checkout.index');

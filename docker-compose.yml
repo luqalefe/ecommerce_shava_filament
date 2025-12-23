@@ -17,6 +17,9 @@ services:
       - DB_PORT=3306
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - shava_network
     depends_on:
@@ -46,10 +49,10 @@ services:
     container_name: shava_ecommerce_db
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: ${DB_DATABASE:-shava_ecommerce}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-root}
-      MYSQL_USER: ${DB_USERNAME:-root}
+      MYSQL_DATABASE: shava_ecommerce
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_PASSWORD: password
+      MYSQL_USER: shava
       SERVICE_TAGS: dev
       SERVICE_NAME: mysql
     ports:
@@ -60,7 +63,7 @@ services:
     networks:
       - shava_network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD:-root}"]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD:-root}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -77,7 +80,7 @@ services:
     networks:
       - shava_network
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -104,4 +107,3 @@ volumes:
 networks:
   shava_network:
     driver: bridge
-

@@ -104,3 +104,5 @@ php artisan storage:link
 
 📖 **Guia completo**: Veja `GUIA_DEPLOY_HOSTINGER.md` para detalhes.
 
+
+

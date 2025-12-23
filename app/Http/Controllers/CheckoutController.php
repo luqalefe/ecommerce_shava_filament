@@ -90,6 +90,12 @@ class CheckoutController extends Controller
      */
     public function store(Request $request)
     {
+        $user = Auth::user();
+        
+        // Definir regras de validação dinâmicas para CPF e celular
+        $cpfRule = empty($user->cpf) ? 'required|string|min:11|max:14' : 'nullable|string|min:11|max:14';
+        $celularRule = empty($user->celular) ? 'required|string|min:10|max:15' : 'nullable|string|min:10|max:15';
+        
         $request->validate(
             [
                 'payment_method' => 'required|string|in:pix',
@@ -99,18 +105,35 @@ class CheckoutController extends Controller
                 'cidade' => 'required_if:address_id,new,',
                 'estado' => 'required_if:address_id,new,',
                 'cep' => 'required_if:address_id,new,',
-                // Adicionar validação para o valor do frete e serviço
                 'shipping_service' => 'required|string',
                 'shipping_cost' => 'required|numeric|min:0',
+                // Validação dinâmica para CPF e Celular
+                'cpf' => $cpfRule,
+                'celular' => $celularRule,
             ],
             [
                 'address_id.required_without_all' => 'Você deve selecionar um endereço existente OU preencher um novo endereço.',
                 'shipping_service.required' => 'Por favor, calcule e selecione uma opção de frete.',
                 'shipping_cost.required' => 'O custo do frete não foi selecionado.',
+                'cpf.required' => 'Por favor, informe seu CPF para continuar.',
+                'celular.required' => 'Por favor, informe seu celular para continuar.',
             ]
         );
 
-        $user = Auth::user();
+        // Atualizar CPF e Celular do usuário se foram enviados no formulário
+        $profileUpdated = false;
+        if ($request->filled('cpf') && empty($user->cpf)) {
+            $user->cpf = preg_replace('/\D/', '', $request->input('cpf'));
+            $profileUpdated = true;
+        }
+        if ($request->filled('celular') && empty($user->celular)) {
+            $user->celular = $request->input('celular');
+            $profileUpdated = true;
+        }
+        if ($profileUpdated) {
+            $user->save();
+            $user->refresh(); // Recarrega os dados do banco
+        }
         $cartItems = Cart::getContent();
         $cartSubTotal = Cart::getSubTotal(); // Total dos produtos
         $shippingCost = (float) $request->input('shipping_cost');
@@ -185,9 +208,10 @@ class CheckoutController extends Controller
             // <<< FIM DA MODIFICAÇÃO DO FRETE >>>
 
 
-            // Verificar CPF e Celular
+            // Verificar CPF e Celular (já devem ter sido preenchidos no formulário)
             if (empty($user->cpf) || empty($user->celular)) {
-                throw new \Exception('Seu perfil está incompleto. Por favor, adicione seu CPF e Celular no seu perfil antes de finalizar a compra.');
+                DB::rollBack();
+                return back()->withInput()->with('error', 'Por favor, preencha seu CPF e Celular para continuar.');
             }
 
             // Dados do Cliente para Abacate Pay

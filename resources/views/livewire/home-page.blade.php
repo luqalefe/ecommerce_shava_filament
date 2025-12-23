@@ -45,33 +45,21 @@
 
 <div>
 
-{{-- HERO CARROSSEL - Transição suave automática --}}
-<section id="heroCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="5000" data-bs-pause="false">
-    <div class="carousel-inner">
-        <div class="carousel-item active hero-slide">
-            <div class="hero-bg" style="background-image: url('{{ asset('images/shava_banner.png') }}');"></div>
-            <div class="hero-content">
-                <span class="hero-label">EMPRESA GENUINAMENTE ACREANA</span>
-                <h1 class="hero-title">A Tradição em Cada Detalhe</h1>
-                <a href="{{ route('about') }}" class="hero-btn">CONHEÇA NOSSA CULTURA</a>
-            </div>
-        </div>
-        <div class="carousel-item hero-slide">
-            <div class="hero-bg" style="background-image: url('{{ asset('images/shava_banner2.png') }}');"></div>
-            <div class="hero-content">
-                <span class="hero-label">COLEÇÃO HEMPWEAR</span>
-                <h1 class="hero-title">Vista a Sua Essência</h1>
-                <a href="{{ route('products.index') }}" class="hero-btn">CONHEÇA A COLEÇÃO</a>
-            </div>
-        </div>
-        <div class="carousel-item hero-slide">
-            <div class="hero-bg" style="background-image: url('{{ asset('images/banner3.png') }}');"></div>
-            <div class="hero-content">
-                <h1 class="hero-title">Nosso Propósito</h1>
-                <p class="hero-text d-none d-md-block">"Não vendemos produtos. Criamos símbolos com propósitos."</p>
-                <a href="{{ route('about') }}" class="hero-btn">SAIBA MAIS</a>
-            </div>
-        </div>
+{{-- HERO VIDEO - Teste com vídeo de fundo --}}
+<section id="heroVideo" class="hero-video-container">
+    <!-- Vídeo de Fundo - MOBILE -->
+    <div class="hero-video-wrapper hero-video-mobile">
+        <video autoplay muted loop playsinline class="hero-video">
+            <source src="{{ site_setting_url('hero_video_mobile', 'images/coleçãomiraçõesmobile.webm') }}" type="video/webm">
+            Seu navegador não suporta vídeos HTML5.
+        </video>
+    </div>
+    <!-- Vídeo de Fundo - DESKTOP -->
+    <div class="hero-video-wrapper hero-video-desktop">
+        <video autoplay muted loop playsinline class="hero-video">
+            <source src="{{ site_setting_url('hero_video_desktop', 'images/coleção_miraçoes.webm') }}" type="video/webm">
+            Seu navegador não suporta vídeos HTML5.
+        </video>
     </div>
 </section>
 
@@ -222,34 +210,14 @@ document.getElementById('launchesCarousel')?.addEventListener('scroll', function
 
 {{-- SEÇÃO: MAIS VENDIDOS --}}
 <section class="bestsellers-section">
-    <div class="container">
+    <div class="container mx-auto px-4">
         <div class="section-header">
             <h2 class="section-title">Mais Vendidos</h2>
             <a href="{{ route('products.index') }}" class="section-link">Ver todos →</a>
         </div>
-        <div class="enhanced-products-grid">
+        <div class="products-grid">
             @forelse ($products->take(4) as $product)
-                <div class="enhanced-product-card">
-                    <a href="{{ route('product.show', $product->slug) }}" class="enhanced-product-link">
-                        <div class="enhanced-product-image">
-                            @php
-                                $imageUrl = $product->images->isNotEmpty() 
-                                    ? asset('storage/' . $product->images->first()->path) 
-                                    : 'https://via.placeholder.com/400x400/f5f5f5/ccc?text=Sem+Imagem';
-                            @endphp
-                            <img src="{{ $imageUrl }}" alt="{{ $product->name }}" loading="lazy">
-                        </div>
-                    </a>
-                    <div class="enhanced-product-info">
-                        <span class="enhanced-product-category">{{ $product->category->name ?? 'Produto' }}</span>
-                        <h3 class="enhanced-product-name">{{ $product->name }}</h3>
-                        <p class="enhanced-product-price">R$ {{ number_format($product->price, 2, ',', '.') }}</p>
-                        <span class="enhanced-product-installment">ou 3x de R$ {{ number_format($product->price / 3, 2, ',', '.') }} Sem juros</span>
-                    </div>
-                    <div class="enhanced-product-action">
-                        <a href="{{ route('product.show', $product->slug) }}" class="enhanced-product-btn">COMPRAR</a>
-                    </div>
-                </div>
+                <x-product-card :product="$product" />
             @empty
                 <p class="no-products">Nenhum produto encontrado.</p>
             @endforelse
@@ -257,35 +225,15 @@ document.getElementById('launchesCarousel')?.addEventListener('scroll', function
     </div>
 </section>
 
-{{-- SEÇÃO: TODOS OS PRODUTOS --}}
+{{-- SEÇÃO: NOSSOS PRODUTOS --}}
 <section class="products-section">
-    <div class="container">
+    <div class="container mx-auto px-4">
         <div class="section-header">
             <h2 class="section-title">Nossos Produtos</h2>
         </div>
-        <div class="enhanced-products-grid">
+        <div class="products-grid">
             @forelse ($products as $product)
-                <div class="enhanced-product-card">
-                    <a href="{{ route('product.show', $product->slug) }}" class="enhanced-product-link">
-                        <div class="enhanced-product-image">
-                            @php
-                                $imageUrl = $product->images->isNotEmpty() 
-                                    ? asset('storage/' . $product->images->first()->path) 
-                                    : 'https://via.placeholder.com/400x400/f5f5f5/ccc?text=Sem+Imagem';
-                            @endphp
-                            <img src="{{ $imageUrl }}" alt="{{ $product->name }}" loading="lazy">
-                        </div>
-                    </a>
-                    <div class="enhanced-product-info">
-                        <span class="enhanced-product-category">{{ $product->category->name ?? 'Produto' }}</span>
-                        <h3 class="enhanced-product-name">{{ $product->name }}</h3>
-                        <p class="enhanced-product-price">R$ {{ number_format($product->price, 2, ',', '.') }}</p>
-                        <span class="enhanced-product-installment">ou 3x de R$ {{ number_format($product->price / 3, 2, ',', '.') }} Sem juros</span>
-                    </div>
-                    <div class="enhanced-product-action">
-                        <a href="{{ route('product.show', $product->slug) }}" class="enhanced-product-btn">COMPRAR</a>
-                    </div>
-                </div>
+                <x-product-card :product="$product" />
             @empty
                 <p class="no-products">Nenhum produto encontrado.</p>
             @endforelse
@@ -297,6 +245,7 @@ document.getElementById('launchesCarousel')?.addEventListener('scroll', function
         @endif
     </div>
 </section>
+
 
 {{-- SEÇÃO: TRUST BADGES / SEGURANÇA --}}
 <section class="trust-section">
@@ -353,23 +302,41 @@ document.getElementById('launchesCarousel')?.addEventListener('scroll', function
        DESIGN - INSPIRADO BEM BOLADO
        ============================================ */
     
-    /* HERO CAROUSEL - Responsivo estilo Bem Bolado */
-    #heroCarousel { 
+    /* HERO VIDEO - Vídeo de Fundo */
+    .hero-video-container { 
         overflow: hidden; 
         position: relative;
         z-index: 1;
-    }
-    
-    /* Mobile: banner mais curto, estilo Bem Bolado */
-    .hero-slide { 
-        height: 55vh; 
+        width: 100%;
+        height: 55vh;
         min-height: 280px;
         max-height: 380px;
     }
     
+    .hero-video-wrapper {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+    
+    .hero-video {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        min-width: 100%;
+        min-height: 100%;
+        width: auto;
+        height: auto;
+        object-fit: cover;
+    }
+    
     /* Tablet: transição */
     @media (min-width: 768px) { 
-        .hero-slide { 
+        .hero-video-container { 
             height: 60vh; 
             min-height: 350px;
             max-height: 450px;
@@ -378,11 +345,127 @@ document.getElementById('launchesCarousel')?.addEventListener('scroll', function
     
     /* Desktop: banner mais horizontal/wide */
     @media (min-width: 1200px) {
-        .hero-slide {
+        .hero-video-container {
             height: 65vh;
             min-height: 400px;
             max-height: 550px;
         }
+    }
+    
+    /* HERO CAROUSEL - Alpine.js Implementation (mantido para fallback) */
+    .hero-carousel-container { 
+        overflow: hidden; 
+        position: relative;
+        z-index: 1;
+    }
+    
+    .hero-slides {
+        position: relative;
+        width: 100%;
+        height: 55vh;
+        min-height: 280px;
+        max-height: 380px;
+    }
+    
+    /* Mobile: banner mais curto, estilo Bem Bolado */
+    .hero-slide { 
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 100%;
+        width: 100%;
+    }
+    
+    /* Tablet: transição */
+    @media (min-width: 768px) { 
+        .hero-slides { 
+            height: 60vh; 
+            min-height: 350px;
+            max-height: 450px;
+        } 
+    }
+    
+    /* Desktop: banner mais horizontal/wide */
+    @media (min-width: 1200px) {
+        .hero-slides {
+            height: 65vh;
+            min-height: 400px;
+            max-height: 550px;
+        }
+    }
+    
+    /* Carousel Navigation Arrows */
+    .carousel-arrow {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 48px;
+        height: 48px;
+        background: rgba(255,255,255,0.9);
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+    
+    .carousel-arrow:hover {
+        background: white;
+        transform: translateY(-50%) scale(1.1);
+    }
+    
+    .carousel-arrow svg {
+        width: 24px;
+        height: 24px;
+        color: #44403C;
+    }
+    
+    .carousel-arrow-prev { left: 1rem; }
+    .carousel-arrow-next { right: 1rem; }
+    
+    @media (max-width: 767px) {
+        .carousel-arrow {
+            width: 36px;
+            height: 36px;
+        }
+        .carousel-arrow svg {
+            width: 18px;
+            height: 18px;
+        }
+    }
+    
+    /* Carousel Indicators */
+    .carousel-indicators {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 8px;
+        z-index: 10;
+    }
+    
+    .indicator-dot {
+        width: 30px;
+        height: 4px;
+        background: rgba(255,255,255,0.5);
+        border: none;
+        border-radius: 2px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .indicator-dot:hover {
+        background: rgba(255,255,255,0.8);
+    }
+    
+    .indicator-dot.active {
+        background: white;
     }
     
     .hero-bg { 
@@ -405,6 +488,13 @@ document.getElementById('launchesCarousel')?.addEventListener('scroll', function
     .hero-text { color: rgba(255,255,255,0.95); font-size: 1.1rem; max-width: 500px; margin-bottom: 1.5rem; text-shadow: 0 1px 3px rgba(0,0,0,0.3); }
     .hero-btn { display: inline-block; background: #1C4532; color: white; padding: 1rem 2.5rem; font-size: 0.85rem; font-weight: 600; letter-spacing: 1px; text-decoration: none; transition: all 0.3s ease; border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
     .hero-btn:hover { background: #15372A; color: white; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
+    
+    /* Hero Minimal - Só botão, sem overlay escuro */
+    .hero-content-minimal {
+        background: transparent !important;
+        justify-content: flex-end !important;
+        padding-bottom: 3rem !important;
+    }
     
     .carousel-indicators { bottom: 20px; }
     .carousel-indicators button { width: 30px; height: 3px; border-radius: 0; background: rgba(255,255,255,0.5); border: none; margin: 0 5px; }
@@ -497,11 +587,22 @@ document.getElementById('launchesCarousel')?.addEventListener('scroll', function
         scroll-snap-type: x mandatory;
         scrollbar-width: none;
         -ms-overflow-style: none;
-        padding: 1rem 1rem 1rem calc(50vw - 700px);
+        padding: 1rem calc(50vw - 700px);
+        padding-right: calc(50vw - 560px); /* Extra padding for last card */
     }
     
     @media (max-width: 1440px) {
-        .launches-carousel { padding: 1rem 1.5rem; }
+        .launches-carousel { 
+            padding: 1rem 1.5rem; 
+            padding-right: 80px; /* Ensure last card is fully visible */
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .launches-carousel { 
+            padding: 1rem; 
+            padding-right: 60px; 
+        }
     }
     
     .launches-carousel::-webkit-scrollbar { display: none; }
@@ -770,7 +871,8 @@ document.getElementById('launchesCarousel')?.addEventListener('scroll', function
 
     /* CATEGORIES SECTION */
     .categories-section { padding: 3rem 0; background: #FAFAF9; }
-    .categories-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .categories-section .container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+    .categories-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; max-width: 1000px; margin: 0 auto; }
     @media (min-width: 768px) { .categories-grid { grid-template-columns: repeat(4, 1fr); gap: 1.5rem; } }
     
     .category-card {
@@ -799,8 +901,17 @@ document.getElementById('launchesCarousel')?.addEventListener('scroll', function
     @media (min-width: 992px) { .products-grid { grid-template-columns: repeat(4, 1fr); } }
 
     /* PRODUCT CARD */
-    .product-card { display: block; text-decoration: none; background: white; border-radius: 12px; overflow: hidden; transition: all 0.3s ease; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
-    .product-card:hover { transform: translateY(-5px); box-shadow: 0 15px 40px rgba(0,0,0,0.1); }
+    .product-card { 
+        display: flex;
+        flex-direction: column;
+        text-decoration: none; 
+        background: white; 
+        border-radius: 16px; 
+        overflow: hidden; 
+        transition: all 0.3s ease; 
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+    }
+    .product-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.12); }
     
     .product-image { position: relative; aspect-ratio: 1; overflow: hidden; background: #F5F5F4; }
     .product-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
@@ -808,14 +919,60 @@ document.getElementById('launchesCarousel')?.addEventListener('scroll', function
     
     .product-badge { position: absolute; top: 10px; left: 10px; background: #1C4532; color: white; font-size: 0.7rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; }
     
-    .product-info { padding: 1rem; text-align: center; }
-    @media (min-width: 768px) { .product-info { padding: 1.25rem; } }
+    .product-info { padding: 1rem 1.25rem; text-align: left; flex: 1; }
     
-    .product-name { font-size: 0.9rem; font-weight: 500; color: #44403C; margin-bottom: 0.5rem; line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-    @media (min-width: 768px) { .product-name { font-size: 1rem; } }
+    .product-category {
+        display: inline-block;
+        color: #78716C;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.5px;
+    }
     
-    .product-price { font-size: 1rem; font-weight: 600; color: #1C4532; margin: 0; }
-    @media (min-width: 768px) { .product-price { font-size: 1.1rem; } }
+    .product-name { 
+        font-size: 1rem; 
+        font-weight: 600; 
+        color: #44403C; 
+        margin-bottom: 0.75rem; 
+        line-height: 1.3; 
+        overflow: hidden; 
+        text-overflow: ellipsis; 
+        display: -webkit-box; 
+        -webkit-line-clamp: 2; 
+        -webkit-box-orient: vertical; 
+    }
+    
+    .product-price { 
+        font-size: 1.5rem; 
+        font-weight: 700; 
+        color: #1C4532; 
+        margin: 0; 
+    }
+    
+    .product-installment {
+        display: block;
+        font-size: 0.8rem;
+        color: #78716C;
+        margin-top: 4px;
+    }
+    
+    .product-action { padding: 0 1.25rem 1.25rem; }
+    
+    .product-btn {
+        display: block;
+        text-align: center;
+        background: #1C4532;
+        color: white;
+        padding: 0.875rem 1.5rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    .product-btn:hover { background: #15372A; color: white; }
     
     .no-products { grid-column: 1 / -1; text-align: center; color: #78716C; padding: 3rem; }
     .btn-view-all { display: inline-block; padding: 1rem 3rem; border: 2px solid #1C4532; color: #1C4532; font-size: 0.85rem; font-weight: 600; letter-spacing: 1px; text-decoration: none; transition: all 0.3s ease; border-radius: 6px; }
@@ -946,5 +1103,14 @@ document.getElementById('launchesCarousel')?.addEventListener('scroll', function
     .floating-btn.whatsapp:hover { background: #15372A; }
     .floating-btn.instagram { background: white; color: #44403C; border: 1px solid #E7E5E4; }
     .floating-btn.instagram:hover { background: #F5F5F4; color: #1C4532; }
+
+    /* HERO VIDEO - Mobile/Desktop Switch */
+    .hero-video-mobile { display: block; }
+    .hero-video-desktop { display: none; }
+    
+    @media (min-width: 768px) {
+        .hero-video-mobile { display: none; }
+        .hero-video-desktop { display: block; }
+    }
 </style>
 @endpush

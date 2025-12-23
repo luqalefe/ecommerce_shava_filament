@@ -3,32 +3,30 @@
 @section('title', 'Nossa Loja')
 
 @section('content')
-<div class="container py-5">
-    <h1 class="text-center h1 fw-bold mb-5">Nossa Loja</h1>
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+<div class="container mx-auto px-4 py-12">
+    <h1 class="text-center text-3xl md:text-4xl font-bold mb-8">Nossa Loja</h1>
+    <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
         @forelse ($products as $product)
-            <div class="col">
-                <div class="card h-100 shadow-sm border-0">
-                    <a href="{{ route('product.show', $product->slug) }}" class="text-decoration-none">
-                        @if($product->images->isNotEmpty())
-                            <img src="{{ asset('storage/' . $product->images->first()->path) }}" class="card-img-top" alt="{{ $product->name }}" style="height: 250px; object-fit: cover;">
-                        @else
-                            <img src="https://via.placeholder.com/300" class="card-img-top" alt="Imagem indisponível" style="height: 250px; object-fit: cover;">
-                        @endif
-                        <div class="card-body">
-                            <h5 class="card-title text-truncate">{{ $product->name }}</h5>
-                            <p class="card-text fw-bold" style="color: var(--sh-muted-gold);">
-                                {{ 'R$ ' . number_format($product->price, 2, ',', '.') }}
-                            </p>
-                        </div>
-                    </a>
-                </div>
+            <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <a href="{{ route('product.show', $product->slug) }}" class="block">
+                    @if($product->images->isNotEmpty())
+                        <img src="{{ asset('storage/' . $product->images->first()->path) }}" class="w-full h-48 md:h-56 object-cover" alt="{{ $product->name }}">
+                    @else
+                        <img src="https://via.placeholder.com/300" class="w-full h-48 md:h-56 object-cover" alt="Imagem indisponível">
+                    @endif
+                    <div class="p-4">
+                        <h5 class="text-sm md:text-base font-medium text-gray-800 truncate">{{ $product->name }}</h5>
+                        <p class="text-lg font-bold mt-2" style="color: var(--sh-muted-gold);">
+                            {{ 'R$ ' . number_format($product->price, 2, ',', '.') }}
+                        </p>
+                    </div>
+                </a>
             </div>
         @empty
-            <p class="col-12 text-center">Nenhum produto encontrado.</p>
+            <p class="col-span-full text-center text-gray-500">Nenhum produto encontrado.</p>
         @endforelse
     </div>
-    <div class="mt-5 d-flex justify-content-center">
+    <div class="mt-12 flex justify-center">
         {{ $products->links() }}
     </div>
 </div>

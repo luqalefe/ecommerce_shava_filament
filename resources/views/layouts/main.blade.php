@@ -39,24 +39,34 @@
     {{-- Livewire Styles --}}
     @livewireStyles
     
-    {{-- Bootstrap CSS (mantido para compatibilidade com páginas antigas) --}}
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    {{-- Bootstrap Icons (apenas ícones, sem CSS/JS do Bootstrap) --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    {{-- Google Fonts --}}
+    {{-- Google Fonts - DM Serif Display --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
     
     {{-- Estilos Personalizados --}}
     <style>
         body { 
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+            font-family: 'DM Serif Display', serif; 
             background-color: #FAFAF9; 
-            color: #44403C; 
+            color: #44403C;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
         }
         h1, h2, h3, h4, h5, h6 {
-            font-family: 'Playfair Display', serif;
+            font-family: 'DM Serif Display', serif;
+            text-transform: uppercase;
+        }
+        /* Reset para inputs e botões */
+        input, textarea, select, button {
+            font-family: 'DM Serif Display', serif;
+        }
+        /* Exceções - manter lowercase onde necessário */
+        input[type="text"], input[type="email"], input[type="password"], input[type="tel"], textarea {
+            text-transform: none;
         }
         :root {
             --sh-muted-gold: #A8947A; 
@@ -70,12 +80,11 @@
             --sh-stone-200: #E7E5E4;
             --sh-border: #E7E5E4;
         }
-        /* Carrossel (mantido para compatibilidade) */
+        /* Utilitários CSS customizados */
         .hero-slide-image { width: 100%; height: 100%; background-size: cover; background-position: center; }
-        .carousel-caption { background: rgba(0, 0, 0, 0.3); inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: white;}
-        .carousel-control-prev-icon, .carousel-control-next-icon { filter: invert(1) grayscale(100); }
-        .carousel-indicators button { background-color: rgba(255, 255, 255, 0.5); border: 0; }
-        .carousel-indicators .active { background-color: white; }
+        
+        /* Alpine.js x-cloak - hide elements until Alpine loads */
+        [x-cloak] { display: none !important; }
     </style>
     @stack('styles')
 </head>
@@ -87,8 +96,7 @@
     @include('layouts.partials.bottom-nav')
     @include('layouts.partials.footer')
 
-    {{-- Bootstrap JS Bundle (mantido para compatibilidade) --}}
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    {{-- Bootstrap JS removido - usando Alpine.js via Vite --}}
     
     {{-- Livewire Scripts --}}
     @livewireScripts

@@ -28,6 +28,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->profile() // Permitir usuários editarem perfil
             ->colors([
                 'primary' => Color::Amber,
             ])

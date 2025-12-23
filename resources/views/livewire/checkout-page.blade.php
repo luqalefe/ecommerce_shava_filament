@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-gray-50">
+<div class="checkout-page-wrapper">
     <script>
         // Formatação de CEP e listener para foco automático
         (function() {
@@ -16,30 +16,24 @@
                 
                 cepInput.dataset.setup = 'true';
                 
-                // Formatação visual apenas - o wire:model vai sincronizar normalmente
-                // O Livewire já remove formatação no método updatedCep()
                 cepInput.addEventListener('input', function(e) {
                     const formatted = formatCep(e.target.value);
-                    // Só atualiza se diferente para evitar loop
                     if (e.target.value !== formatted) {
                         e.target.value = formatted;
                     }
                 });
 
-                // Formata valor inicial se existir
                 if (cepInput.value) {
                     cepInput.value = formatCep(cepInput.value);
                 }
             }
 
-            // Inicializa quando DOM estiver pronto
             if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', setupCepInput);
             } else {
                 setupCepInput();
             }
 
-            // Listener para evento de endereço preenchido (Livewire 3)
             document.addEventListener('livewire:init', () => {
                 Livewire.on('address-filled', () => {
                     setTimeout(() => {
@@ -51,7 +45,6 @@
                 });
             });
 
-            // Para elementos criados dinamicamente pelo Livewire
             document.addEventListener('livewire:init', () => {
                 Livewire.hook('morph.updated', () => {
                     setupCepInput();
@@ -59,74 +52,137 @@
             });
         })();
     </script>
-    {{-- Header Minimalista --}}
-    <div class="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div class="container mx-auto px-4 py-4 max-w-6xl">
-            <div class="flex items-center justify-between">
-                <a href="{{ route('home') }}" class="text-xl font-bold text-gray-900">Shava Haux</a>
-                <div class="flex items-center gap-4 text-sm text-gray-600">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    <span class="hidden sm:inline">Compra 100% Segura</span>
-                </div>
+
+    {{-- Header Checkout --}}
+    <div class="checkout-header">
+        <div class="checkout-header-inner">
+            <a href="{{ route('home') }}" class="checkout-logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Shava Haux
+            </a>
+            <div class="checkout-secure">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                <span>Checkout Seguro</span>
+            </div>
+        </div>
+        {{-- Progress Steps --}}
+        <div class="checkout-steps">
+            <div class="step active">
+                <span class="step-number">1</span>
+                <span class="step-label">Endereço</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step {{ $selectedShipping !== null ? 'active' : '' }}">
+                <span class="step-number">2</span>
+                <span class="step-label">Frete</span>
+            </div>
+            <div class="step-line"></div>
+            <div class="step {{ $paymentMethod ? 'active' : '' }}">
+                <span class="step-number">3</span>
+                <span class="step-label">Pagamento</span>
             </div>
         </div>
     </div>
 
-    <div class="container mx-auto px-4 py-6 max-w-6xl">
-        {{-- Mensagens de Erro/Sucesso --}}
+    <div class="checkout-container">
+        {{-- Alertas --}}
         @if(session()->has('error'))
-            <div class="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                    </svg>
-                    <p class="font-medium">{{ session('error') }}</p>
-                </div>
+            <div class="checkout-alert error">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
+                <span>{{ session('error') }}</span>
+                <button type="button" onclick="this.parentElement.remove()">×</button>
             </div>
         @endif
 
         @if(session()->has('message'))
-            <div class="mb-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                    </svg>
-                    <p class="font-medium">{{ session('message') }}</p>
-                </div>
+            <div class="checkout-alert success">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                <span>{{ session('message') }}</span>
+                <button type="button" onclick="this.parentElement.remove()">×</button>
             </div>
         @endif
 
-        {{-- Erros do Livewire --}}
         @error('payment')
-            <div class="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-                <div class="flex items-center gap-2">
-                    <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                    </svg>
-                    <p class="font-medium">{{ $message }}</p>
-                </div>
+            <div class="checkout-alert error">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z"/></svg>
+                <span>{{ $message }}</span>
             </div>
         @enderror
 
         <form wire:submit.prevent="placeOrder">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+            <div class="checkout-layout">
                 
-                {{-- Coluna Esquerda: Formulário (Desktop) / Primeira seção (Mobile) --}}
-                <div class="lg:col-span-2 space-y-6 order-2 lg:order-1">
+                {{-- COLUNA FORMULÁRIOS --}}
+                <div class="checkout-forms">
                     
-                    {{-- Seção de Endereço --}}
-                    <div class="bg-white rounded-lg border border-gray-200 p-6 lg:p-8">
-                        <h2 class="text-xl font-semibold text-gray-900 mb-6">Endereço de Entrega</h2>
+                    {{-- Dados Pessoais (se necessário) --}}
+                    @if($needsCpf || $needsCelular)
+                    <div class="checkout-card highlight">
+                        <div class="card-header warning">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            <h2>Complete seus Dados</h2>
+                        </div>
+                        <p class="card-subtitle">Precisamos dessas informações para processar seu pagamento.</p>
                         
-                        <div class="space-y-5">
+                        <div class="form-grid">
+                            @if($needsCpf)
+                            <div class="form-group">
+                                <label for="cpf">CPF <span class="required">*</span></label>
+                                <input 
+                                    type="text" 
+                                    id="cpf" 
+                                    wire:model.blur="cpf"
+                                    placeholder="000.000.000-00"
+                                    maxlength="14"
+                                    x-data
+                                    x-on:input="$el.value = $el.value.replace(/\D/g, '').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2')"
+                                    class="form-input @error('cpf') error @enderror"
+                                >
+                                @error('cpf') <p class="form-error">{{ $message }}</p> @enderror
+                            </div>
+                            @endif
+                            
+                            @if($needsCelular)
+                            <div class="form-group">
+                                <label for="celular">Celular <span class="required">*</span></label>
+                                <input 
+                                    type="text" 
+                                    id="celular" 
+                                    wire:model.blur="celular"
+                                    placeholder="(00) 00000-0000"
+                                    maxlength="15"
+                                    x-data
+                                    x-on:input="$el.value = $el.value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2')"
+                                    class="form-input @error('celular') error @enderror"
+                                >
+                                @error('celular') <p class="form-error">{{ $message }}</p> @enderror
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
+
+                    {{-- Endereço de Entrega --}}
+                    <div class="checkout-card">
+                        <div class="card-header">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            <h2>Endereço de Entrega</h2>
+                        </div>
+                        
+                        <div class="form-section">
                             {{-- CEP --}}
-                            <div>
-                                <label for="cep" class="block text-sm font-medium text-gray-700 mb-2">
-                                    CEP <span class="text-red-500">*</span>
-                                </label>
-                                <div class="relative">
+                            <div class="form-group">
+                                <label for="cep">CEP <span class="required">*</span></label>
+                                <div class="input-with-icon">
                                     <input 
                                         type="text" 
                                         id="cep" 
@@ -134,208 +190,82 @@
                                         wire:blur="searchAddressOnBlur"
                                         placeholder="00000-000"
                                         maxlength="9"
-                                        class="w-full h-12 px-4 border rounded-lg transition-all duration-200
-                                               @error('cep') border-red-300 focus:border-red-500 focus:ring-red-500 
-                                               @else border-gray-300 focus:border-[var(--sh-muted-gold)] focus:ring-[var(--sh-muted-gold)]
-                                               @enderror
-                                               focus:ring-2 focus:outline-none text-base"
+                                        class="form-input @error('cep') error @enderror"
                                     >
-                                    <div wire:loading wire:target="searchAddress,searchAddressOnBlur" class="absolute right-3 top-1/2 -translate-y-1/2">
-                                        <svg class="animate-spin h-5 w-5 text-[var(--sh-muted-gold)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <div wire:loading wire:target="searchAddress,searchAddressOnBlur" class="input-spinner">
+                                        <svg class="animate-spin" viewBox="0 0 24 24" fill="none">
                                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                         </svg>
                                     </div>
-                                    @if($loadingCep && !$errors->has('cep'))
-                                        <div class="absolute right-3 top-1/2 -translate-y-1/2">
-                                            <svg class="animate-spin h-5 w-5 text-[var(--sh-muted-gold)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                        </div>
-                                    @endif
                                 </div>
-                                @error('cep') 
-                                    <p class="mt-1.5 text-sm text-red-600 flex items-center gap-1">
-                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                        </svg>
-                                        {{ $message }}
-                                    </p> 
-                                @enderror
-                                <div wire:loading wire:target="searchAddress,searchAddressOnBlur" class="mt-1.5">
-                                    <p class="text-sm text-gray-600 flex items-center gap-2">
-                                        <svg class="animate-spin h-4 w-4 text-[var(--sh-muted-gold)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Buscando endereço...
-                                    </p>
+                                @error('cep') <p class="form-error">{{ $message }}</p> @enderror
+                                <div wire:loading wire:target="searchAddress,searchAddressOnBlur">
+                                    <p class="form-hint loading">Buscando endereço...</p>
                                 </div>
                             </div>
 
                             {{-- Rua e Número --}}
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div class="sm:col-span-2">
-                                    <label for="rua" class="block text-sm font-medium text-gray-700 mb-2">
-                                        Rua <span class="text-red-500">*</span>
-                                    </label>
-                                    <input 
-                                        type="text" 
-                                        id="rua" 
-                                        wire:model.blur="rua"
-                                        class="w-full h-12 px-4 border rounded-lg transition-all duration-200
-                                               @error('rua') border-red-300 focus:border-red-500 focus:ring-red-500 
-                                               @else border-gray-300 focus:border-[var(--sh-muted-gold)] focus:ring-[var(--sh-muted-gold)]
-                                               @enderror
-                                               focus:ring-2 focus:outline-none text-base"
-                                    >
-                                    @error('rua') 
-                                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p> 
-                                    @enderror
+                            <div class="form-grid cols-3-1">
+                                <div class="form-group">
+                                    <label for="rua">Rua <span class="required">*</span></label>
+                                    <input type="text" id="rua" wire:model.blur="rua" class="form-input @error('rua') error @enderror">
+                                    @error('rua') <p class="form-error">{{ $message }}</p> @enderror
                                 </div>
-                                <div>
-                                    <label for="numero" class="block text-sm font-medium text-gray-700 mb-2">
-                                        Número <span class="text-red-500">*</span>
-                                    </label>
-                                    <input 
-                                        type="text" 
-                                        id="numero" 
-                                        wire:model.blur="numero"
-                                        class="w-full h-12 px-4 border rounded-lg transition-all duration-200
-                                               @error('numero') border-red-300 focus:border-red-500 focus:ring-red-500 
-                                               @else border-gray-300 focus:border-[var(--sh-muted-gold)] focus:ring-[var(--sh-muted-gold)]
-                                               @enderror
-                                               focus:ring-2 focus:outline-none text-base"
-                                    >
-                                    @error('numero') 
-                                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p> 
-                                    @enderror
+                                <div class="form-group">
+                                    <label for="numero">Número <span class="required">*</span></label>
+                                    <input type="text" id="numero" wire:model.blur="numero" class="form-input @error('numero') error @enderror">
+                                    @error('numero') <p class="form-error">{{ $message }}</p> @enderror
                                 </div>
                             </div>
 
                             {{-- Complemento e Bairro --}}
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="complemento" class="block text-sm font-medium text-gray-700 mb-2">
-                                        Complemento <span class="text-gray-400 text-xs font-normal">(opcional)</span>
-                                    </label>
-                                    <input 
-                                        type="text" 
-                                        id="complemento" 
-                                        wire:model="complemento"
-                                        placeholder="Apto, Bloco, etc."
-                                        class="w-full h-12 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:border-[var(--sh-muted-gold)] focus:ring-[var(--sh-muted-gold)] focus:outline-none transition-all duration-200 text-base"
-                                    >
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="complemento">Complemento <span class="optional">(opcional)</span></label>
+                                    <input type="text" id="complemento" wire:model="complemento" placeholder="Apto, Bloco, etc." class="form-input">
                                 </div>
-                                <div>
-                                    <label for="bairro" class="block text-sm font-medium text-gray-700 mb-2">
-                                        Bairro <span class="text-gray-400 text-xs font-normal">(opcional)</span>
-                                    </label>
-                                    <input 
-                                        type="text" 
-                                        id="bairro" 
-                                        wire:model="bairro"
-                                        placeholder="Bairro"
-                                        class="w-full h-12 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:border-[var(--sh-muted-gold)] focus:ring-[var(--sh-muted-gold)] focus:outline-none transition-all duration-200 text-base"
-                                    >
+                                <div class="form-group">
+                                    <label for="bairro">Bairro <span class="required">*</span></label>
+                                    <input type="text" id="bairro" wire:model.blur="bairro" class="form-input @error('bairro') error @enderror">
+                                    @error('bairro') <p class="form-error">{{ $message }}</p> @enderror
                                 </div>
                             </div>
 
                             {{-- Cidade e Estado --}}
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="cidade" class="block text-sm font-medium text-gray-700 mb-2">
-                                        Cidade <span class="text-red-500">*</span>
-                                    </label>
-                                    <input 
-                                        type="text" 
-                                        id="cidade" 
-                                        wire:model.blur="cidade"
-                                        class="w-full h-12 px-4 border rounded-lg transition-all duration-200
-                                               @error('cidade') border-red-300 focus:border-red-500 focus:ring-red-500 
-                                               @else border-gray-300 focus:border-[var(--sh-muted-gold)] focus:ring-[var(--sh-muted-gold)]
-                                               @enderror
-                                               focus:ring-2 focus:outline-none text-base"
-                                    >
-                                    @error('cidade') 
-                                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p> 
-                                    @enderror
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="cidade">Cidade <span class="required">*</span></label>
+                                    <input type="text" id="cidade" wire:model.blur="cidade" class="form-input @error('cidade') error @enderror">
+                                    @error('cidade') <p class="form-error">{{ $message }}</p> @enderror
                                 </div>
-                                <div x-data="{
+                                <div class="form-group" x-data="{
                                     estados: [
-                                        { sigla: 'AC', nome: 'Acre' },
-                                        { sigla: 'AL', nome: 'Alagoas' },
-                                        { sigla: 'AP', nome: 'Amapá' },
-                                        { sigla: 'AM', nome: 'Amazonas' },
-                                        { sigla: 'BA', nome: 'Bahia' },
-                                        { sigla: 'CE', nome: 'Ceará' },
-                                        { sigla: 'DF', nome: 'Distrito Federal' },
-                                        { sigla: 'ES', nome: 'Espírito Santo' },
-                                        { sigla: 'GO', nome: 'Goiás' },
-                                        { sigla: 'MA', nome: 'Maranhão' },
-                                        { sigla: 'MT', nome: 'Mato Grosso' },
-                                        { sigla: 'MS', nome: 'Mato Grosso do Sul' },
-                                        { sigla: 'MG', nome: 'Minas Gerais' },
-                                        { sigla: 'PA', nome: 'Pará' },
-                                        { sigla: 'PB', nome: 'Paraíba' },
-                                        { sigla: 'PR', nome: 'Paraná' },
-                                        { sigla: 'PE', nome: 'Pernambuco' },
-                                        { sigla: 'PI', nome: 'Piauí' },
-                                        { sigla: 'RJ', nome: 'Rio de Janeiro' },
-                                        { sigla: 'RN', nome: 'Rio Grande do Norte' },
-                                        { sigla: 'RS', nome: 'Rio Grande do Sul' },
-                                        { sigla: 'RO', nome: 'Rondônia' },
-                                        { sigla: 'RR', nome: 'Roraima' },
-                                        { sigla: 'SC', nome: 'Santa Catarina' },
-                                        { sigla: 'SP', nome: 'São Paulo' },
-                                        { sigla: 'SE', nome: 'Sergipe' },
-                                        { sigla: 'TO', nome: 'Tocantins' }
+                                        { sigla: 'AC', nome: 'Acre' }, { sigla: 'AL', nome: 'Alagoas' }, { sigla: 'AP', nome: 'Amapá' },
+                                        { sigla: 'AM', nome: 'Amazonas' }, { sigla: 'BA', nome: 'Bahia' }, { sigla: 'CE', nome: 'Ceará' },
+                                        { sigla: 'DF', nome: 'Distrito Federal' }, { sigla: 'ES', nome: 'Espírito Santo' }, { sigla: 'GO', nome: 'Goiás' },
+                                        { sigla: 'MA', nome: 'Maranhão' }, { sigla: 'MT', nome: 'Mato Grosso' }, { sigla: 'MS', nome: 'Mato Grosso do Sul' },
+                                        { sigla: 'MG', nome: 'Minas Gerais' }, { sigla: 'PA', nome: 'Pará' }, { sigla: 'PB', nome: 'Paraíba' },
+                                        { sigla: 'PR', nome: 'Paraná' }, { sigla: 'PE', nome: 'Pernambuco' }, { sigla: 'PI', nome: 'Piauí' },
+                                        { sigla: 'RJ', nome: 'Rio de Janeiro' }, { sigla: 'RN', nome: 'Rio Grande do Norte' }, { sigla: 'RS', nome: 'Rio Grande do Sul' },
+                                        { sigla: 'RO', nome: 'Rondônia' }, { sigla: 'RR', nome: 'Roraima' }, { sigla: 'SC', nome: 'Santa Catarina' },
+                                        { sigla: 'SP', nome: 'São Paulo' }, { sigla: 'SE', nome: 'Sergipe' }, { sigla: 'TO', nome: 'Tocantins' }
                                     ],
-                                    search: '',
-                                    open: false,
-                                    selectedEstado: null,
+                                    search: '', open: false, selectedEstado: null,
                                     get filteredEstados() {
                                         if (!this.search) return this.estados;
-                                        const searchLower = this.search.toLowerCase();
-                                        return this.estados.filter(estado => 
-                                            estado.nome.toLowerCase().includes(searchLower) ||
-                                            estado.sigla.toLowerCase().includes(searchLower)
-                                        );
+                                        const s = this.search.toLowerCase();
+                                        return this.estados.filter(e => e.nome.toLowerCase().includes(s) || e.sigla.toLowerCase().includes(s));
                                     },
-                                    selectEstado(estado) {
-                                        this.selectedEstado = estado;
-                                        this.search = estado.sigla;
-                                        @this.set('estado', estado.sigla);
-                                        this.open = false;
-                                    },
+                                    selectEstado(e) { this.selectedEstado = e; this.search = e.sigla; @this.set('estado', e.sigla); this.open = false; },
                                     init() {
-                                        // Sincroniza com o valor do Livewire
-                                        const currentEstado = @js($estado);
-                                        if (currentEstado) {
-                                            const estado = this.estados.find(e => e.sigla === currentEstado.toUpperCase());
-                                            if (estado) {
-                                                this.selectedEstado = estado;
-                                                this.search = estado.sigla;
-                                            }
-                                        }
-                                        
-                                        // Observa mudanças no Livewire
-                                        $watch('$wire.estado', (value) => {
-                                            if (value) {
-                                                const estado = this.estados.find(e => e.sigla === value.toUpperCase());
-                                                if (estado) {
-                                                    this.selectedEstado = estado;
-                                                    this.search = estado.sigla;
-                                                }
-                                            }
-                                        });
+                                        const c = @js($estado);
+                                        if (c) { const e = this.estados.find(x => x.sigla === c.toUpperCase()); if (e) { this.selectedEstado = e; this.search = e.sigla; } }
+                                        $watch('$wire.estado', (v) => { if (v) { const e = this.estados.find(x => x.sigla === v.toUpperCase()); if (e) { this.selectedEstado = e; this.search = e.sigla; } } });
                                     }
-                                }" class="relative">
-                                    <label for="estado" class="block text-sm font-medium text-gray-700 mb-2">
-                                        Estado <span class="text-red-500">*</span>
-                                    </label>
-                                    <div class="relative">
+                                }">
+                                    <label for="estado">Estado <span class="required">*</span></label>
+                                    <div class="select-wrapper">
                                         <input 
                                             type="text" 
                                             id="estado" 
@@ -344,365 +274,751 @@
                                             @focus="open = true"
                                             @keydown.escape="open = false"
                                             @keydown.enter.prevent="if (filteredEstados.length === 1) selectEstado(filteredEstados[0])"
-                                            placeholder="Buscar estado..."
-                                            class="w-full h-12 px-4 pr-10 border rounded-lg transition-all duration-200 uppercase
-                                                   @error('estado') border-red-300 focus:border-red-500 focus:ring-red-500 
-                                                   @else border-gray-300 focus:border-[var(--sh-muted-gold)] focus:ring-[var(--sh-muted-gold)]
-                                                   @enderror
-                                                   focus:ring-2 focus:outline-none text-base"
+                                            placeholder="UF"
+                                            class="form-input uppercase @error('estado') error @enderror"
                                         >
-                                        <div class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </div>
+                                        <svg class="select-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg>
                                         
-                                        {{-- Dropdown --}}
-                                        <div x-show="open" 
-                                             @click.away="open = false"
-                                             x-transition:enter="transition ease-out duration-200"
-                                             x-transition:enter-start="opacity-0 scale-95"
-                                             x-transition:enter-end="opacity-100 scale-100"
-                                             x-transition:leave="transition ease-in duration-150"
-                                             x-transition:leave-start="opacity-100 scale-100"
-                                             x-transition:leave-end="opacity-0 scale-95"
-                                             class="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto"
-                                             style="display: none;">
+                                        <div x-show="open" @click.away="open = false" x-transition class="select-dropdown" style="display: none;">
                                             <template x-if="filteredEstados.length === 0">
-                                                <div class="px-4 py-3 text-sm text-gray-500 text-center">
-                                                    Nenhum estado encontrado
-                                                </div>
+                                                <div class="dropdown-empty">Nenhum estado encontrado</div>
                                             </template>
                                             <template x-for="estado in filteredEstados" :key="estado.sigla">
-                                                <button 
-                                                    type="button"
-                                                    @click="selectEstado(estado)"
-                                                    class="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center justify-between"
-                                                    :class="selectedEstado?.sigla === estado.sigla ? 'bg-[var(--sh-muted-gold)]/10' : ''"
-                                                >
-                                                    <div>
-                                                        <span class="font-semibold text-gray-900 uppercase" x-text="estado.sigla"></span>
-                                                        <span class="text-gray-600 ml-2" x-text="estado.nome"></span>
-                                                    </div>
-                                                    <svg x-show="selectedEstado?.sigla === estado.sigla" class="w-5 h-5 text-[var(--sh-muted-gold)]" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                                                    </svg>
+                                                <button type="button" @click="selectEstado(estado)" class="dropdown-item" :class="selectedEstado?.sigla === estado.sigla ? 'selected' : ''">
+                                                    <span><strong x-text="estado.sigla"></strong> <span x-text="estado.nome"></span></span>
+                                                    <svg x-show="selectedEstado?.sigla === estado.sigla" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
                                                 </button>
                                             </template>
                                         </div>
                                     </div>
-                                    @error('estado') 
-                                        <p class="mt-1.5 text-sm text-red-600">{{ $message }}</p> 
-                                    @enderror
+                                    @error('estado') <p class="form-error">{{ $message }}</p> @enderror
                                 </div>
                             </div>
-
-                            {{-- Opções de Frete --}}
-                            @if($loading)
-                                <div class="py-8 text-center">
-                                    <svg class="animate-spin h-8 w-8 text-[var(--sh-muted-gold)] mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    <p class="text-gray-600">Calculando opções de frete...</p>
-                                </div>
-                            @elseif(!empty($shippingOptions))
-                                <div class="pt-6 border-t border-gray-200">
-                                    <h3 class="text-base font-semibold text-gray-900 mb-4">Selecione o frete:</h3>
-                                    <div class="space-y-3">
-                                        @foreach($shippingOptions as $index => $option)
-                                            <label class="flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all duration-200
-                                                   {{ $selectedShipping === $index 
-                                                       ? 'border-[var(--sh-muted-gold)] bg-[var(--sh-muted-gold)]/5 shadow-sm' 
-                                                       : 'border-gray-200 hover:border-gray-300 bg-white' 
-                                                   }}">
-                                                <input 
-                                                    type="radio" 
-                                                    name="shipping_option" 
-                                                    wire:click="selectShipping({{ $index }})"
-                                                    class="mt-1 mr-4 w-5 h-5 text-[var(--sh-muted-gold)] focus:ring-[var(--sh-muted-gold)] cursor-pointer"
-                                                    {{ $selectedShipping === $index ? 'checked' : '' }}
-                                                >
-                                                <div class="flex-1 min-w-0">
-                                                    <div class="font-semibold text-gray-900 mb-1">{{ $option['service'] }}</div>
-                                                    <div class="text-sm text-gray-600">{{ $option['carrier'] }} • {{ $option['deadline'] }} dias úteis</div>
-                                                </div>
-                                                <div class="ml-4 font-bold text-lg text-[var(--sh-muted-gold)] whitespace-nowrap">
-                                                    R$ {{ number_format($option['price'], 2, ',', '.') }}
-                                                </div>
-                                            </label>
-                                        @endforeach
-                                    </div>
-                                    @error('shippingService')
-                                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-                            @elseif($cep && !$loading)
-                                <div class="pt-6 border-t border-gray-200 text-center py-4">
-                                    <p class="text-gray-500">Nenhuma opção de frete encontrada para este CEP.</p>
-                                </div>
-                            @endif
                         </div>
+
+                        {{-- Opções de Frete --}}
+                        @if($loading)
+                            <div class="shipping-loading">
+                                <svg class="animate-spin" viewBox="0 0 24 24" fill="none">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <p>Calculando opções de frete...</p>
+                            </div>
+                        @elseif(!empty($shippingOptions))
+                            <div class="shipping-options">
+                                <h3>Selecione o frete:</h3>
+                                <div class="shipping-list">
+                                    @foreach($shippingOptions as $index => $option)
+                                        <label class="shipping-option {{ $selectedShipping === $index ? 'selected' : '' }}">
+                                            <input 
+                                                type="radio" 
+                                                name="shipping_option" 
+                                                wire:click="selectShipping({{ $index }})"
+                                                {{ $selectedShipping === $index ? 'checked' : '' }}
+                                            >
+                                            <div class="shipping-info">
+                                                <span class="shipping-name">{{ $option['service'] }}</span>
+                                                <span class="shipping-details">{{ $option['carrier'] }} • {{ $option['deadline'] }} dias úteis</span>
+                                            </div>
+                                            <span class="shipping-price">R$ {{ number_format($option['price'], 2, ',', '.') }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                                @error('shippingService') <p class="form-error">{{ $message }}</p> @enderror
+                            </div>
+                        @elseif($cep && !$loading)
+                            <div class="shipping-empty">
+                                <p>Nenhuma opção de frete encontrada para este CEP.</p>
+                            </div>
+                        @endif
                     </div>
 
-                    {{-- Seção de Pagamento --}}
-                    <div class="bg-white rounded-lg border border-gray-200 p-6 lg:p-8">
-                        <div class="flex items-center gap-2 mb-6">
-                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    {{-- Forma de Pagamento --}}
+                    <div class="checkout-card">
+                        <div class="card-header">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                                <line x1="1" y1="10" x2="23" y2="10"/>
                             </svg>
-                            <h2 class="text-xl font-semibold text-gray-900">Forma de Pagamento</h2>
+                            <h2>Forma de Pagamento</h2>
                         </div>
-                        <div class="space-y-3">
-                            {{-- Opção PIX --}}
-                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all duration-200
-                                   {{ $paymentMethod === 'pix' ? 'border-[var(--sh-muted-gold)] bg-[var(--sh-muted-gold)]/5' : 'border-gray-200 hover:border-gray-300' }}">
-                                <input 
-                                    type="radio" 
-                                    wire:model="paymentMethod"
-                                    value="pix"
-                                    class="mr-4 w-5 h-5 text-[var(--sh-muted-gold)] focus:ring-[var(--sh-muted-gold)] cursor-pointer"
-                                >
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <span class="font-semibold text-gray-900">PIX</span>
-                                        <span class="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded">Instantâneo</span>
-                                    </div>
-                                    <p class="text-sm text-gray-600">Pagamento aprovado na hora</p>
+                        
+                        <div class="payment-options">
+                            {{-- PIX --}}
+                            <label class="payment-option {{ $paymentMethod === 'pix' ? 'selected' : '' }}">
+                                <input type="radio" wire:model="paymentMethod" value="pix">
+                                <div class="payment-icon pix">
+                                    <svg viewBox="0 0 512 512" fill="currentColor">
+                                        <path d="M242.4 292.5c-2.3-2.3-6.1-2.3-8.5 0l-56.5 56.5c-15.7 15.7-41 15.7-56.6 0-15.6-15.6-15.6-41 0-56.6l56.5-56.5c2.3-2.3 2.3-6.1 0-8.5l-14.1-14.1c-2.3-2.3-6.1-2.3-8.5 0l-56.5 56.5c-28.1 28.1-28.1 73.6 0 101.7 28.1 28.1 73.6 28.1 101.7 0l56.5-56.5c2.3-2.3 2.3-6.1 0-8.5l-14-14zm142.3-142.3l-56.5 56.5c-2.3 2.3-2.3 6.1 0 8.5l14.1 14.1c2.3 2.3 6.1 2.3 8.5 0l56.5-56.5c15.6-15.6 41-15.6 56.6 0 15.6 15.6 15.6 41 0 56.6l-56.5 56.5c-2.3 2.3-2.3 6.1 0 8.5l14.1 14.1c2.3 2.3 6.1 2.3 8.5 0l56.5-56.5c28.1-28.1 28.1-73.6 0-101.7-28.2-28.1-73.7-28.1-101.8 0z"/>
+                                    </svg>
                                 </div>
-                                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                </svg>
+                                <div class="payment-info">
+                                    <span class="payment-name">PIX</span>
+                                    <span class="payment-badge instant">Instantâneo</span>
+                                    <span class="payment-desc">Pagamento aprovado na hora</span>
+                                </div>
                             </label>
 
-                            {{-- Opção Mercado Pago --}}
-                            <label class="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all duration-200
-                                   {{ $paymentMethod === 'mercadopago' ? 'border-[var(--sh-muted-gold)] bg-[var(--sh-muted-gold)]/5' : 'border-gray-200 hover:border-gray-300' }}">
-                                <input 
-                                    type="radio" 
-                                    wire:model="paymentMethod"
-                                    value="mercadopago"
-                                    class="mr-4 w-5 h-5 text-[var(--sh-muted-gold)] focus:ring-[var(--sh-muted-gold)] cursor-pointer"
-                                >
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <span class="font-semibold text-gray-900">Mercado Pago</span>
-                                        <span class="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded">Cartão/Pix</span>
-                                    </div>
-                                    <p class="text-sm text-gray-600">Pague com cartão de crédito ou Pix</p>
+                            {{-- Mercado Pago --}}
+                            <label class="payment-option {{ $paymentMethod === 'mercadopago' ? 'selected' : '' }}">
+                                <input type="radio" wire:model="paymentMethod" value="mercadopago">
+                                <div class="payment-icon mp">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="1" y="4" width="22" height="16" rx="2"/>
+                                        <line x1="1" y1="10" x2="23" y2="10"/>
+                                    </svg>
                                 </div>
-                                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                                </svg>
+                                <div class="payment-info">
+                                    <span class="payment-name">Mercado Pago</span>
+                                    <span class="payment-badge card">Cartão/Pix</span>
+                                    <span class="payment-desc">Pague com cartão de crédito ou Pix</span>
+                                </div>
                             </label>
                         </div>
-                        <div class="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-500">
-                            <svg class="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
-                            </svg>
+                        
+                        <div class="payment-security">
+                            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/></svg>
                             <span>Seus dados estão protegidos e criptografados</span>
                         </div>
                     </div>
                 </div>
 
-                {{-- Coluna Direita: Resumo do Pedido --}}
-                <div class="lg:col-span-1 order-1 lg:order-2">
+                {{-- RESUMO DO PEDIDO --}}
+                <div class="checkout-summary-section">
                     {{-- Mobile: Resumo Colapsável --}}
-                    <div class="lg:hidden bg-white rounded-lg border border-gray-200 mb-6">
-                        <button 
-                            type="button"
-                            wire:click="toggleSummary"
-                            class="w-full flex items-center justify-between p-4 text-left"
-                        >
+                    <div class="summary-mobile">
+                        <button type="button" wire:click="toggleSummary" class="summary-toggle">
                             <div>
-                                <h2 class="text-lg font-semibold text-gray-900">Resumo do Pedido</h2>
-                                <p class="text-sm text-gray-600 mt-1">
-                                    {{ count($cartItems) }} {{ count($cartItems) === 1 ? 'item' : 'itens' }} • 
-                                    R$ {{ number_format($total, 2, ',', '.') }}
-                                </p>
+                                <h2>Resumo do Pedido</h2>
+                                <p>{{ count($cartItems) }} {{ count($cartItems) === 1 ? 'item' : 'itens' }} • R$ {{ number_format($total, 2, ',', '.') }}</p>
                             </div>
-                            <svg class="w-5 h-5 text-gray-400 transition-transform duration-200 {{ $summaryExpanded ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
+                            <svg class="{{ $summaryExpanded ? 'rotate' : '' }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 9l-7 7-7-7"/></svg>
                         </button>
+                        
                         @if($summaryExpanded)
-                            <div class="px-4 pb-4 border-t border-gray-200 pt-4">
-                                {{-- Lista de Itens --}}
-                                <div class="space-y-3 mb-4 max-h-48 overflow-y-auto">
-                                    @foreach($cartItems as $item)
-                                        <div class="flex items-start gap-3 pb-3 border-b border-gray-100 last:border-0 last:pb-0">
-                                            @php 
-                                                $imageUrl = $item->attributes->has('image') 
-                                                    ? asset('storage/' . $item->attributes->image) 
-                                                    : 'https://via.placeholder.com/60';
-                                            @endphp
-                                            <img 
-                                                src="{{ $imageUrl }}" 
-                                                alt="{{ $item->name }}" 
-                                                class="w-12 h-12 object-cover rounded-lg flex-shrink-0"
-                                            >
-                                            <div class="flex-1 min-w-0">
-                                                <p class="font-medium text-xs text-gray-900 line-clamp-2">{{ $item->name }}</p>
-                                                <p class="text-xs text-gray-500 mt-0.5">Qtd: {{ $item->quantity }}</p>
-                                            </div>
-                                            <span class="font-semibold text-gray-900 whitespace-nowrap text-xs">
-                                                R$ {{ number_format($item->getPriceSum(), 2, ',', '.') }}
-                                            </span>
+                        <div class="summary-content">
+                            <div class="summary-items">
+                                @foreach($cartItems as $item)
+                                    <div class="summary-item">
+                                        @php $imageUrl = $item->attributes->has('image') ? asset('storage/' . $item->attributes->image) : 'https://via.placeholder.com/60'; @endphp
+                                        <img src="{{ $imageUrl }}" alt="{{ $item->name }}">
+                                        <div class="item-details">
+                                            <p class="item-name">{{ $item->name }}</p>
+                                            <p class="item-qty">Qtd: {{ $item->quantity }}</p>
                                         </div>
-                                    @endforeach
-                                </div>
-
-                                {{-- Totais --}}
-                                <div class="space-y-2 pt-3 border-t border-gray-200">
-                                    <div class="flex justify-between text-gray-700 text-sm">
-                                        <span>Subtotal</span>
-                                        <span class="font-semibold">R$ {{ number_format($subTotal, 2, ',', '.') }}</span>
+                                        <span class="item-price">R$ {{ number_format($item->getPriceSum(), 2, ',', '.') }}</span>
                                     </div>
-                                    <div class="flex justify-between text-gray-700 text-sm">
-                                        <span>Frete</span>
-                                        <span class="font-semibold">
-                                            @if($shippingCost > 0)
-                                                R$ {{ number_format($shippingCost, 2, ',', '.') }}
-                                            @else
-                                                <span class="text-gray-400 font-normal">A calcular</span>
-                                            @endif
-                                        </span>
-                                    </div>
-                                    <div class="flex justify-between items-center pt-2 border-t border-gray-200">
-                                        <span class="font-semibold text-gray-900">Total</span>
-                                        <span class="text-lg font-bold text-[var(--sh-muted-gold)]">
-                                            R$ {{ number_format($total, 2, ',', '.') }}
-                                        </span>
-                                    </div>
-                                </div>
+                                @endforeach
                             </div>
+                            <div class="summary-totals">
+                                <div class="total-row"><span>Subtotal</span><span>R$ {{ number_format($subTotal, 2, ',', '.') }}</span></div>
+                                <div class="total-row"><span>Frete</span><span>@if($shippingCost > 0) R$ {{ number_format($shippingCost, 2, ',', '.') }} @else A calcular @endif</span></div>
+                                <div class="total-row final"><span>Total</span><span>R$ {{ number_format($total, 2, ',', '.') }}</span></div>
+                            </div>
+                        </div>
                         @endif
                     </div>
 
                     {{-- Desktop: Resumo Sticky --}}
-                    <div class="hidden lg:block">
-                        <div class="bg-white rounded-lg border border-gray-200 p-6 sticky top-20">
-                            <h2 class="text-xl font-semibold text-gray-900 mb-6">Resumo do Pedido</h2>
+                    <div class="summary-desktop">
+                        <div class="summary-card">
+                            <h2>Resumo do Pedido</h2>
                             
-                            {{-- Lista de Itens --}}
-                            <div class="space-y-4 mb-6 max-h-64 overflow-y-auto">
+                            <div class="summary-items">
                                 @foreach($cartItems as $item)
-                                    <div class="flex items-start gap-3 pb-4 border-b border-gray-100 last:border-0 last:pb-0">
-                                        @php 
-                                            $imageUrl = $item->attributes->has('image') 
-                                                ? asset('storage/' . $item->attributes->image) 
-                                                : 'https://via.placeholder.com/60';
-                                        @endphp
-                                        <img 
-                                            src="{{ $imageUrl }}" 
-                                            alt="{{ $item->name }}" 
-                                            class="w-14 h-14 object-cover rounded-lg flex-shrink-0"
-                                        >
-                                        <div class="flex-1 min-w-0">
-                                            <p class="font-medium text-sm text-gray-900 line-clamp-2">{{ $item->name }}</p>
-                                            <p class="text-xs text-gray-500 mt-1">Qtd: {{ $item->quantity }}</p>
+                                    <div class="summary-item">
+                                        @php $imageUrl = $item->attributes->has('image') ? asset('storage/' . $item->attributes->image) : 'https://via.placeholder.com/60'; @endphp
+                                        <img src="{{ $imageUrl }}" alt="{{ $item->name }}">
+                                        <div class="item-details">
+                                            <p class="item-name">{{ $item->name }}</p>
+                                            <p class="item-qty">Qtd: {{ $item->quantity }}</p>
                                         </div>
-                                        <span class="font-semibold text-gray-900 whitespace-nowrap text-sm">
-                                            R$ {{ number_format($item->getPriceSum(), 2, ',', '.') }}
-                                        </span>
+                                        <span class="item-price">R$ {{ number_format($item->getPriceSum(), 2, ',', '.') }}</span>
                                     </div>
                                 @endforeach
                             </div>
-
-                            {{-- Totais --}}
-                            <div class="space-y-3 mb-6 pt-4 border-t border-gray-200">
-                                <div class="flex justify-between text-gray-700">
-                                    <span class="text-sm">Subtotal</span>
-                                    <span class="font-semibold text-sm">R$ {{ number_format($subTotal, 2, ',', '.') }}</span>
-                                </div>
-                                <div class="flex justify-between text-gray-700">
-                                    <span class="text-sm">Frete</span>
-                                    <span class="font-semibold text-sm">
-                                        @if($shippingCost > 0)
-                                            R$ {{ number_format($shippingCost, 2, ',', '.') }}
-                                        @else
-                                            <span class="text-gray-400 font-normal">A calcular</span>
-                                        @endif
-                                    </span>
+                            
+                            <div class="summary-totals">
+                                <div class="total-row"><span>Subtotal</span><span>R$ {{ number_format($subTotal, 2, ',', '.') }}</span></div>
+                                <div class="total-row"><span>Frete</span><span>@if($shippingCost > 0) R$ {{ number_format($shippingCost, 2, ',', '.') }} @else <span class="muted">A calcular</span> @endif</span></div>
+                            </div>
+                            
+                            <div class="summary-final">
+                                <span>Total</span>
+                                <div class="final-value">
+                                    <span class="total-price">R$ {{ number_format($total, 2, ',', '.') }}</span>
+                                    @if($paymentMethod === 'pix')
+                                        <span class="pix-discount">5% OFF no PIX aplicado!</span>
+                                    @endif
                                 </div>
                             </div>
-
-                            {{-- Total --}}
-                            <div class="border-t-2 border-gray-200 pt-4 mb-6">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-lg font-semibold text-gray-900">Total</span>
-                                    <span class="text-xl font-bold text-[var(--sh-muted-gold)]">
-                                        R$ {{ number_format($total, 2, ',', '.') }}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {{-- CTA Button --}}
-                            <button 
-                                type="submit"
-                                wire:loading.attr="disabled"
-                                wire:target="placeOrder"
-                                class="w-full bg-[var(--sh-muted-gold)] hover:bg-[var(--sh-muted-gold)]/90 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg text-base"
-                            >
-                                <span wire:loading.remove wire:target="placeOrder" class="flex items-center justify-center gap-2">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            
+                            <button type="submit" wire:loading.attr="disabled" wire:target="placeOrder" class="btn-checkout">
+                                <span wire:loading.remove wire:target="placeOrder">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
                                     </svg>
                                     Finalizar Pedido
                                 </span>
-                                <span wire:loading wire:target="placeOrder" class="flex items-center justify-center gap-2">
-                                    <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <span wire:loading wire:target="placeOrder">
+                                    <svg class="animate-spin" viewBox="0 0 24 24" fill="none">
                                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                                     </svg>
                                     Processando...
                                 </span>
                             </button>
-
-                            <p class="text-xs text-gray-500 text-center mt-4">
-                                Você será redirecionado para o pagamento seguro
-                            </p>
-                        </div>
-                    </div>
-
-                    {{-- Mobile: CTA Button Fixo na parte inferior --}}
-                    <div class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg z-50">
-                        <div class="container mx-auto px-4 max-w-6xl">
-                            <div class="flex items-center justify-between mb-3">
-                                <div>
-                                    <p class="text-xs text-gray-500">Total</p>
-                                    <p class="text-xl font-bold text-[var(--sh-muted-gold)]">
-                                        R$ {{ number_format($total, 2, ',', '.') }}
-                                    </p>
-                                </div>
+                            
+                            <p class="checkout-redirect">Você será redirecionado para o pagamento seguro</p>
+                            
+                            <div class="trust-badges">
+                                <div class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg><span>Seguro</span></div>
+                                <div class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg><span>Cartão</span></div>
+                                <div class="badge pix"><svg viewBox="0 0 512 512" fill="currentColor"><path d="M242.4 292.5c-2.3-2.3-6.1-2.3-8.5 0l-56.5 56.5c-15.7 15.7-41 15.7-56.6 0-15.6-15.6-15.6-41 0-56.6l56.5-56.5c2.3-2.3 2.3-6.1 0-8.5l-14.1-14.1c-2.3-2.3-6.1-2.3-8.5 0l-56.5 56.5c-28.1 28.1-28.1 73.6 0 101.7z"/></svg><span>PIX</span></div>
                             </div>
-                            <button 
-                                type="submit"
-                                wire:loading.attr="disabled"
-                                wire:target="placeOrder"
-                                class="w-full bg-[var(--sh-muted-gold)] hover:bg-[var(--sh-muted-gold)]/90 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-md text-base"
-                            >
-                                <span wire:loading.remove wire:target="placeOrder" class="flex items-center justify-center gap-2">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                    </svg>
-                                    Finalizar Pedido
-                                </span>
-                                <span wire:loading wire:target="placeOrder" class="flex items-center justify-center gap-2">
-                                    <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    Processando...
-                                </span>
-                            </button>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {{-- Mobile Sticky Footer --}}
+            <div class="checkout-sticky-footer">
+                <div class="sticky-info">
+                    <span class="sticky-label">Total</span>
+                    <span class="sticky-price">R$ {{ number_format($total, 2, ',', '.') }}</span>
+                </div>
+                <button type="submit" wire:loading.attr="disabled" wire:target="placeOrder" class="sticky-btn">
+                    <span wire:loading.remove wire:target="placeOrder">Finalizar</span>
+                    <span wire:loading wire:target="placeOrder">...</span>
+                </button>
+            </div>
         </form>
     </div>
 
-    {{-- Espaçamento para o botão fixo no mobile --}}
-    <div class="lg:hidden h-24"></div>
+    <div class="checkout-spacer"></div>
+
+    <style>
+    /* ============================================
+       CHECKOUT PAGE - AMAZON STYLE
+       ============================================ */
+
+    .checkout-page-wrapper {
+        min-height: 100vh;
+        background: #F5F5F4;
+    }
+
+    /* Header */
+    .checkout-header {
+        background: white;
+        border-bottom: 1px solid #E7E5E4;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+    }
+
+    .checkout-header-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .checkout-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1C1917;
+        text-decoration: none;
+        font-family: 'Playfair Display', serif;
+    }
+
+    .checkout-logo svg {
+        width: 20px;
+        height: 20px;
+        color: #78716C;
+    }
+
+    .checkout-secure {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: #059669;
+    }
+
+    .checkout-secure svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .checkout-secure span { display: none; }
+    @media (min-width: 640px) { .checkout-secure span { display: inline; } }
+
+    /* Progress Steps */
+    .checkout-steps {
+        max-width: 500px;
+        margin: 0 auto;
+        padding: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .step {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #A8A29E;
+    }
+
+    .step.active { color: var(--sh-muted-gold, #A69067); }
+
+    .step-number {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #E7E5E4;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .step.active .step-number {
+        background: var(--sh-muted-gold, #A69067);
+        color: white;
+    }
+
+    .step-label {
+        font-size: 0.85rem;
+        font-weight: 500;
+        display: none;
+    }
+
+    @media (min-width: 640px) { .step-label { display: inline; } }
+
+    .step-line {
+        width: 40px;
+        height: 2px;
+        background: #E7E5E4;
+        margin: 0 0.5rem;
+    }
+
+    @media (min-width: 640px) { .step-line { width: 60px; } }
+
+    /* Container */
+    .checkout-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1.5rem 1rem;
+    }
+
+    @media (min-width: 1024px) {
+        .checkout-container { padding: 2rem; }
+    }
+
+    /* Alerts */
+    .checkout-alert {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+
+    .checkout-alert svg { width: 20px; height: 20px; flex-shrink: 0; }
+    .checkout-alert span { flex: 1; }
+    .checkout-alert button { background: none; border: none; font-size: 1.5rem; cursor: pointer; opacity: 0.7; }
+    .checkout-alert.success { background: #ECFDF5; color: #059669; border: 1px solid #A7F3D0; }
+    .checkout-alert.error { background: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
+
+    /* Layout */
+    .checkout-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    @media (min-width: 1024px) {
+        .checkout-layout {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+            align-items: start;
+        }
+    }
+
+    /* Cards */
+    .checkout-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        margin-bottom: 1rem;
+    }
+
+    .checkout-card.highlight {
+        border: 2px solid #F59E0B;
+    }
+
+    .card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .card-header svg { width: 24px; height: 24px; color: var(--sh-muted-gold, #A69067); }
+    .card-header.warning svg { color: #F59E0B; }
+    .card-header h2 { font-size: 1.25rem; font-weight: 700; color: #1C1917; margin: 0; }
+    .card-subtitle { font-size: 0.9rem; color: #78716C; margin-bottom: 1.5rem; }
+
+    /* Form Elements */
+    .form-section { display: flex; flex-direction: column; gap: 1.25rem; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-grid.cols-3-1 { grid-template-columns: 2fr 1fr; }
+    @media (max-width: 640px) { .form-grid, .form-grid.cols-3-1 { grid-template-columns: 1fr; } }
+
+    .form-group { display: flex; flex-direction: column; gap: 0.5rem; }
+    .form-group label { font-size: 0.9rem; font-weight: 500; color: #44403C; }
+    .form-group .required { color: #DC2626; }
+    .form-group .optional { font-size: 0.75rem; color: #A8A29E; font-weight: 400; }
+
+    .form-input {
+        width: 100%;
+        height: 48px;
+        padding: 0 1rem;
+        border: 2px solid #E7E5E4;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+        background: white;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--sh-muted-gold, #A69067);
+        box-shadow: 0 0 0 3px rgba(166, 144, 103, 0.1);
+    }
+
+    .form-input.error { border-color: #DC2626; }
+    .form-input.uppercase { text-transform: uppercase; }
+    .form-error { font-size: 0.8rem; color: #DC2626; margin: 0; }
+    .form-hint { font-size: 0.8rem; color: #78716C; }
+    .form-hint.loading { color: var(--sh-muted-gold, #A69067); }
+
+    .input-with-icon { position: relative; }
+    .input-spinner { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); }
+    .input-spinner svg { width: 20px; height: 20px; color: var(--sh-muted-gold, #A69067); }
+
+    /* Select Dropdown */
+    .select-wrapper { position: relative; }
+    .select-arrow { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; color: #78716C; pointer-events: none; }
+
+    .select-dropdown {
+        position: absolute;
+        z-index: 50;
+        width: 100%;
+        margin-top: 0.5rem;
+        background: white;
+        border: 1px solid #E7E5E4;
+        border-radius: 12px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        max-height: 250px;
+        overflow-y: auto;
+    }
+
+    .dropdown-empty { padding: 1rem; text-align: center; color: #78716C; font-size: 0.9rem; }
+
+    .dropdown-item {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: background 0.15s;
+        text-align: left;
+    }
+
+    .dropdown-item:hover { background: #F5F5F4; }
+    .dropdown-item.selected { background: rgba(166, 144, 103, 0.1); }
+    .dropdown-item svg { width: 18px; height: 18px; color: var(--sh-muted-gold, #A69067); }
+
+    /* Shipping Options */
+    .shipping-loading {
+        padding: 2rem;
+        text-align: center;
+        border-top: 1px solid #E7E5E4;
+        margin-top: 1.5rem;
+    }
+
+    .shipping-loading svg { width: 32px; height: 32px; color: var(--sh-muted-gold, #A69067); margin: 0 auto 0.5rem; }
+    .shipping-loading p { color: #78716C; }
+
+    .shipping-options {
+        border-top: 1px solid #E7E5E4;
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+    }
+
+    .shipping-options h3 { font-size: 1rem; font-weight: 600; color: #1C1917; margin-bottom: 1rem; }
+    .shipping-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+    .shipping-option {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        border: 2px solid #E7E5E4;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .shipping-option:hover { border-color: #D6D3D1; }
+    .shipping-option.selected { border-color: var(--sh-muted-gold, #A69067); background: rgba(166, 144, 103, 0.05); }
+    .shipping-option input { width: 20px; height: 20px; accent-color: var(--sh-muted-gold, #A69067); }
+    .shipping-info { flex: 1; }
+    .shipping-name { font-weight: 600; color: #1C1917; display: block; }
+    .shipping-details { font-size: 0.85rem; color: #78716C; }
+    .shipping-price { font-size: 1.1rem; font-weight: 700; color: var(--sh-muted-gold, #A69067); }
+    .shipping-empty { padding: 1.5rem; text-align: center; color: #78716C; border-top: 1px solid #E7E5E4; margin-top: 1.5rem; }
+
+    /* Payment Options */
+    .payment-options { display: flex; flex-direction: column; gap: 0.75rem; }
+
+    .payment-option {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.25rem;
+        border: 2px solid #E7E5E4;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .payment-option:hover { border-color: #D6D3D1; }
+    .payment-option.selected { border-color: var(--sh-muted-gold, #A69067); background: rgba(166, 144, 103, 0.05); }
+    .payment-option input { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--sh-muted-gold, #A69067); }
+
+    .payment-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .payment-icon svg { width: 24px; height: 24px; }
+    .payment-icon.pix { background: #ECFDF5; }
+    .payment-icon.pix svg { color: #059669; }
+    .payment-icon.mp { background: #EFF6FF; }
+    .payment-icon.mp svg { color: #2563EB; }
+
+    .payment-info { flex: 1; }
+    .payment-name { font-weight: 600; color: #1C1917; margin-right: 0.5rem; }
+    .payment-badge { font-size: 0.7rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+    .payment-badge.instant { background: #ECFDF5; color: #059669; }
+    .payment-badge.card { background: #EFF6FF; color: #2563EB; }
+    .payment-desc { display: block; font-size: 0.85rem; color: #78716C; margin-top: 0.25rem; }
+
+    .payment-security {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #E7E5E4;
+        font-size: 0.8rem;
+        color: #78716C;
+    }
+
+    .payment-security svg { width: 16px; height: 16px; }
+
+    /* Summary Section */
+    .checkout-summary-section { order: -1; }
+    @media (min-width: 1024px) { .checkout-summary-section { order: 0; } }
+
+    .summary-mobile { display: block; }
+    @media (min-width: 1024px) { .summary-mobile { display: none; } }
+
+    .summary-toggle {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        background: white;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        text-align: left;
+    }
+
+    .summary-toggle h2 { font-size: 1rem; font-weight: 600; color: #1C1917; margin: 0; }
+    .summary-toggle p { font-size: 0.85rem; color: #78716C; margin: 0.25rem 0 0 0; }
+    .summary-toggle svg { width: 20px; height: 20px; color: #78716C; transition: transform 0.2s; }
+    .summary-toggle svg.rotate { transform: rotate(180deg); }
+
+    .summary-content {
+        padding: 1rem 1.25rem;
+        border-top: 1px solid #E7E5E4;
+        background: white;
+        border-radius: 0 0 12px 12px;
+    }
+
+    .summary-desktop { display: none; }
+    @media (min-width: 1024px) { .summary-desktop { display: block; } }
+
+    .summary-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        position: sticky;
+        top: 140px;
+    }
+
+    .summary-card h2 { font-size: 1.25rem; font-weight: 700; color: #1C1917; margin: 0 0 1.5rem 0; }
+
+    .summary-items {
+        max-height: 250px;
+        overflow-y: auto;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #E7E5E4;
+    }
+
+    .summary-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #F5F5F4;
+    }
+
+    .summary-item:last-child { border-bottom: none; }
+    .summary-item img { width: 50px; height: 50px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+    .summary-item .item-details { flex: 1; min-width: 0; }
+    .summary-item .item-name { font-size: 0.85rem; font-weight: 500; color: #1C1917; margin: 0; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .summary-item .item-qty { font-size: 0.75rem; color: #78716C; margin: 0.25rem 0 0 0; }
+    .summary-item .item-price { font-size: 0.85rem; font-weight: 600; color: #1C1917; white-space: nowrap; }
+
+    .summary-totals { margin-bottom: 1rem; }
+    .total-row { display: flex; justify-content: space-between; padding: 0.5rem 0; font-size: 0.9rem; color: #57534E; }
+    .total-row span:last-child { font-weight: 600; color: #1C1917; }
+    .total-row .muted { color: #A8A29E; font-weight: 400; }
+
+    .summary-final {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 1rem 0;
+        border-top: 2px solid #E7E5E4;
+        margin-bottom: 1.5rem;
+    }
+
+    .summary-final > span { font-size: 1rem; font-weight: 600; color: #1C1917; }
+    .final-value { text-align: right; }
+    .total-price { font-size: 1.5rem; font-weight: 700; color: #1C1917; display: block; }
+    .pix-discount { font-size: 0.8rem; color: #059669; display: block; margin-top: 0.25rem; }
+
+    .btn-checkout {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        background: #F59E0B;
+        color: white;
+        font-weight: 700;
+        font-size: 1rem;
+        padding: 1rem;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .btn-checkout:hover:not(:disabled) { background: #D97706; transform: translateY(-1px); }
+    .btn-checkout:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-checkout svg { width: 20px; height: 20px; }
+
+    .checkout-redirect { font-size: 0.8rem; color: #78716C; text-align: center; margin: 1rem 0; }
+
+    .trust-badges {
+        display: flex;
+        justify-content: center;
+        gap: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid #E7E5E4;
+    }
+
+    .trust-badges .badge {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .trust-badges .badge svg { width: 22px; height: 22px; color: var(--sh-muted-gold, #A69067); }
+    .trust-badges .badge.pix svg { color: #059669; }
+    .trust-badges .badge span { font-size: 0.7rem; color: #78716C; }
+
+    /* Mobile Sticky Footer */
+    .checkout-sticky-footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        border-top: 1px solid #E7E5E4;
+        padding: 1rem 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        z-index: 100;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    }
+
+    @media (min-width: 1024px) { .checkout-sticky-footer { display: none; } }
+
+    .sticky-info { display: flex; flex-direction: column; }
+    .sticky-label { font-size: 0.8rem; color: #78716C; }
+    .sticky-price { font-size: 1.25rem; font-weight: 700; color: #1C1917; }
+
+    .sticky-btn {
+        background: #F59E0B;
+        color: white;
+        font-weight: 700;
+        font-size: 1rem;
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .sticky-btn:hover:not(:disabled) { background: #D97706; }
+    .sticky-btn:disabled { opacity: 0.6; }
+
+    .checkout-spacer { height: 100px; }
+    @media (min-width: 1024px) { .checkout-spacer { height: 0; } }
+
+    .checkout-forms { order: 2; }
+    @media (min-width: 1024px) { .checkout-forms { order: 1; } }
+    </style>
 </div>

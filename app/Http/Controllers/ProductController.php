@@ -35,7 +35,18 @@ class ProductController extends Controller
             abort(404);
         }
         
-        // Retorna a view 'products.show' e passa a variável 'product' para ela
-        return view('products.show', compact('product'));
+        // Busca produtos relacionados (mesma categoria, excluindo o atual)
+        $relatedProducts = collect();
+        if ($product->category_id) {
+            $relatedProducts = Product::where('is_active', true)
+                ->where('category_id', $product->category_id)
+                ->where('id', '!=', $product->id)
+                ->inRandomOrder()
+                ->take(4)
+                ->get();
+        }
+        
+        // Retorna a view 'products.show' e passa as variáveis para ela
+        return view('products.show', compact('product', 'relatedProducts'));
     }
 }

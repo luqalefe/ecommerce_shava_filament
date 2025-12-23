@@ -17,7 +17,7 @@
             
             {{-- Logo (Centro) --}}
             <a href="{{ route('home') }}" class="mobile-logo">
-                <img src="{{ asset('images/logo_shava.png') }}" alt="Shava Haux">
+                <img src="{{ site_setting_url('logo', 'images/logo_shava.png') }}" alt="Shava Haux">
             </a>
             
             {{-- Carrinho (Direita) --}}
@@ -36,7 +36,7 @@
         <div class="desktop-header">
             {{-- Logo --}}
             <a href="{{ route('home') }}" class="desktop-logo">
-                <img src="{{ asset('images/logo_shava.png') }}" alt="Shava Haux">
+                <img src="{{ site_setting_url('logo', 'images/logo_shava.png') }}" alt="Shava Haux">
             </a>
             
             {{-- Links do Menu Central --}}

@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Builder;
 
 class OrderResource extends Resource
 {
@@ -21,6 +22,16 @@ class OrderResource extends Resource
     protected static ?string $pluralModelLabel = 'Pedidos';
     protected static ?string $navigationGroup = 'Gestão da Loja';
     protected static ?int $navigationSort = 1;
+
+    /**
+     * Filtra para mostrar apenas pedidos com pagamento aprovado
+     * Exclui pedidos pendentes (aguardando pagamento) e cancelados
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->whereNotIn('status', ['pending', 'cancelled']);
+    }
 
     public static function form(Form $form): Form
     {
@@ -145,11 +156,9 @@ class OrderResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Status')
                     ->options([
-                        'pending' => 'Pendente',
                         'processing' => 'Processando',
                         'shipped' => 'Enviado',
                         'delivered' => 'Entregue',
-                        'cancelled' => 'Cancelado',
                     ]),
             ])
             ->actions([

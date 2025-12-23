@@ -32,6 +32,12 @@ class CheckoutPage extends Component
     
     public $paymentMethod = 'pix';
     
+    // Campos de perfil (CPF e Celular)
+    public $cpf = '';
+    public $celular = '';
+    public $needsCpf = false;
+    public $needsCelular = false;
+    
     public $loading = false;
     public $loadingCep = false; // Loading específico para busca de CEP
     public $summaryExpanded = false; // Para controlar resumo no mobile
@@ -50,6 +56,15 @@ class CheckoutPage extends Component
         if ($cartItems->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'Seu carrinho está vazio para finalizar a compra.');
         }
+        
+        // Verificar se o usuário precisa preencher CPF e/ou Celular
+        $user = Auth::user();
+        $this->needsCpf = empty($user->cpf);
+        $this->needsCelular = empty($user->celular);
+        
+        // Pré-preencher se já existir
+        $this->cpf = $user->cpf ?? '';
+        $this->celular = $user->celular ?? '';
     }
 
     /**
@@ -86,7 +101,7 @@ class CheckoutPage extends Component
     }
 
     /**
-     * Busca endereço via ViaCEP e preenche os campos automaticamente
+     * Busca endereço via BrasilAPI e preenche os campos automaticamente
      */
     public function searchAddress($cep = null)
     {
@@ -103,35 +118,41 @@ class CheckoutPage extends Component
         $this->resetErrorBag('cep');
 
         try {
-            // Requisição GET para ViaCEP
-            $response = Http::timeout(5)->get("https://viacep.com.br/ws/{$cep}/json/");
+            // Requisição GET para BrasilAPI (mais confiável que ViaCEP)
+            $response = Http::timeout(10)->get("https://brasilapi.com.br/api/cep/v1/{$cep}");
             
             if (!$response->successful()) {
-                throw new \Exception('Erro na requisição à API ViaCEP');
+                // Fallback para ViaCEP se BrasilAPI falhar
+                $response = Http::timeout(10)->get("https://viacep.com.br/ws/{$cep}/json/");
+                
+                if (!$response->successful()) {
+                    throw new \Exception('Erro na requisição às APIs de CEP');
+                }
+                
+                $data = $response->json();
+                
+                if (isset($data['erro']) && $data['erro'] === true) {
+                    $this->addError('cep', 'CEP não encontrado. Verifique o CEP digitado.');
+                    $this->loadingCep = false;
+                    return;
+                }
+                
+                // Mapear campos do ViaCEP
+                $this->rua = $data['logradouro'] ?? '';
+                $this->bairro = $data['bairro'] ?? '';
+                $this->cidade = $data['localidade'] ?? '';
+                $this->estado = strtoupper($data['uf'] ?? '');
+                $this->complemento = $data['complemento'] ?? '';
+            } else {
+                $data = $response->json();
+                
+                // Mapear campos da BrasilAPI
+                $this->rua = $data['street'] ?? '';
+                $this->bairro = $data['neighborhood'] ?? '';
+                $this->cidade = $data['city'] ?? '';
+                $this->estado = strtoupper($data['state'] ?? '');
+                $this->complemento = '';
             }
-
-            $data = $response->json();
-
-            // Verifica se há erro na resposta
-            if (isset($data['erro']) && $data['erro'] === true) {
-                $this->addError('cep', 'CEP não encontrado. Verifique o CEP digitado.');
-                $this->loadingCep = false;
-                return;
-            }
-
-            // Verifica se logradouro existe (indica sucesso)
-            if (!isset($data['logradouro']) || empty($data['logradouro'])) {
-                $this->addError('cep', 'CEP não encontrado ou inválido.');
-                $this->loadingCep = false;
-                return;
-            }
-
-            // Preenche os campos automaticamente
-            $this->rua = $data['logradouro'] ?? '';
-            $this->bairro = $data['bairro'] ?? '';
-            $this->cidade = $data['localidade'] ?? '';
-            $this->estado = strtoupper($data['uf'] ?? '');
-            $this->complemento = $data['complemento'] ?? '';
 
             // Normaliza o CEP no formato exibido
             $this->cep = substr($cep, 0, 5) . '-' . substr($cep, 5);
@@ -170,6 +191,7 @@ class CheckoutPage extends Component
     /**
      * Calcula o frete usando FrenetService
      * Chamado automaticamente após buscar o endereço
+     * FRETE GRÁTIS para Rio Branco - AC
      */
     private function calculateShipping($cep)
     {
@@ -177,6 +199,32 @@ class CheckoutPage extends Component
         $valorTotal = Cart::getSubTotal();
         
         if ($cartItems->isEmpty()) {
+            $this->loading = false;
+            return;
+        }
+
+        // Verificar se é Rio Branco - AC (frete grátis)
+        $cidadeNormalizada = mb_strtolower(trim($this->cidade ?? ''));
+        $estadoNormalizado = mb_strtoupper(trim($this->estado ?? ''));
+        
+        // Aceitar variações: "rio branco", "riobranco", "Rio Branco"
+        $isRioBranco = in_array($cidadeNormalizada, ['rio branco', 'riobranco']);
+        $isAcre = $estadoNormalizado === 'AC';
+        
+        if ($isRioBranco && $isAcre) {
+            // Frete grátis para Rio Branco - AC
+            $this->shippingOptions = [
+                [
+                    'service' => 'Entrega Local',
+                    'carrier' => 'Shava Haux',
+                    'price' => 0,
+                    'deadline' => 1,
+                ]
+            ];
+            // Selecionar automaticamente o frete grátis
+            $this->selectedShipping = 0;
+            $this->shippingCost = 0;
+            $this->shippingService = 'Entrega Local (Shava Haux) - GRÁTIS';
             $this->loading = false;
             return;
         }
@@ -271,9 +319,14 @@ class CheckoutPage extends Component
         // Validação customizada para CEP (remove caracteres não numéricos antes de validar)
         $cepClean = preg_replace('/\D/', '', $this->cep);
         
+        // Regras dinâmicas para CPF e Celular
+        $cpfRule = $this->needsCpf ? 'required|string|min:11|max:14' : 'nullable';
+        $celularRule = $this->needsCelular ? 'required|string|min:10|max:15' : 'nullable';
+        
         $this->validate([
             'rua' => 'required|string|min:3',
             'numero' => 'required|string',
+            'bairro' => 'required|string|min:2',
             'cidade' => 'required|string|min:2',
             'estado' => 'required|string|size:2',
             'cep' => ['required', 'string', function ($attribute, $value, $fail) use ($cepClean) {
@@ -284,17 +337,40 @@ class CheckoutPage extends Component
             'shippingService' => 'required|string',
             'shippingCost' => 'required|numeric|min:0',
             'paymentMethod' => 'required|string|in:pix,mercadopago',
+            'cpf' => $cpfRule,
+            'celular' => $celularRule,
         ], [
             'rua.required' => 'O campo rua é obrigatório.',
             'numero.required' => 'O campo número é obrigatório.',
+            'bairro.required' => 'O campo bairro é obrigatório.',
             'cidade.required' => 'O campo cidade é obrigatório.',
             'estado.required' => 'O campo estado é obrigatório.',
             'cep.required' => 'O campo CEP é obrigatório.',
             'shippingService.required' => 'Por favor, selecione uma opção de frete.',
             'shippingCost.required' => 'O custo do frete não foi selecionado.',
+            'cpf.required' => 'Por favor, informe seu CPF para continuar.',
+            'cpf.min' => 'CPF deve ter pelo menos 11 dígitos.',
+            'celular.required' => 'Por favor, informe seu celular para continuar.',
+            'celular.min' => 'Celular deve ter pelo menos 10 dígitos.',
         ]);
 
         $user = Auth::user();
+        
+        // Atualizar CPF e Celular do usuário se foram preenchidos
+        $profileUpdated = false;
+        if ($this->needsCpf && !empty($this->cpf)) {
+            $user->cpf = preg_replace('/\D/', '', $this->cpf);
+            $profileUpdated = true;
+        }
+        if ($this->needsCelular && !empty($this->celular)) {
+            $user->celular = $this->celular;
+            $profileUpdated = true;
+        }
+        if ($profileUpdated) {
+            $user->save();
+            $user->refresh();
+        }
+        
         $cartItems = Cart::getContent();
         $cartSubTotal = Cart::getSubTotal();
         $shippingCost = (float) $this->shippingCost;
@@ -465,9 +541,11 @@ class CheckoutPage extends Component
                 ];
             }
 
-            // Verificar CPF e Celular
+            // Verificar CPF e Celular (já devem ter sido atualizados no placeOrder)
             if (empty($user->cpf) || empty($user->celular)) {
-                throw new \Exception('Seu perfil está incompleto. Por favor, adicione seu CPF e Celular no seu perfil antes de finalizar a compra.');
+                $this->addError('payment', 'Por favor, preencha seu CPF e Celular para continuar.');
+                DB::rollBack();
+                return;
             }
 
             // Dados do Cliente para Abacate Pay

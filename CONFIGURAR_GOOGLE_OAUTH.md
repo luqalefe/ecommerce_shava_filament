@@ -176,3 +176,5 @@ A configuração está em `config/services.php`:
 
 **Última atualização**: Novembro 2024
 
+
+

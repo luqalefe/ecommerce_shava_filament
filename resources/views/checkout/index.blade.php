@@ -3,31 +3,79 @@
 @section('title', 'Finalizar Compra')
 
 @section('content')
-<div class="container py-5 my-4">
-    <h1 class="text-center h1 fw-bold mb-5 text-uppercase">Finalizar Compra</h1>
+<div class="container mx-auto px-4 py-12">
+    <h1 class="text-center text-3xl md:text-4xl font-bold mb-8 uppercase">Finalizar Compra</h1>
 
-    {{-- Formulário principal que englobará tudo --}}
-    {{-- Adicionado 'novalidate' para pular a validação HTML dos campos escondidos --}}
     <form action="{{ route('checkout.store') }}" method="POST" novalidate>
         @csrf
-        <div class="row gx-lg-5">
+        <div class="grid lg:grid-cols-12 gap-8">
 
             {{-- Coluna Esquerda: Endereço, Frete e Pagamento --}}
-            <div class="col-lg-7">
-                {{-- Seção de Endereço --}}
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-white py-3">
-                        <h5 class="mb-0">Endereço de Entrega</h5>
+            <div class="lg:col-span-7 space-y-6">
+            
+                {{-- Seção de Dados Pessoais (CPF/Celular) - Exibe apenas se faltando --}}
+                @if(empty($user->cpf) || empty($user->celular))
+                <div class="bg-white rounded-lg shadow-md overflow-hidden border-2 border-amber-400">
+                    <div class="bg-amber-50 px-6 py-4 border-b border-amber-200">
+                        <h5 class="font-semibold text-lg flex items-center gap-2">
+                            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            Complete seus Dados
+                        </h5>
+                        <p class="text-sm text-amber-700 mt-1">Precisamos dessas informações para processar seu pagamento.</p>
                     </div>
-                    <div class="card-body p-4">
-                        {{-- Opção de selecionar endereço existente (se houver) --}}
+                    <div class="p-6">
+                        <div class="grid md:grid-cols-2 gap-4">
+                            @if(empty($user->cpf))
+                            <div>
+                                <label for="cpf" class="block text-sm font-medium text-gray-700 mb-1">CPF*</label>
+                                <input type="text" 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500" 
+                                       id="cpf" 
+                                       name="cpf" 
+                                       placeholder="000.000.000-00"
+                                       maxlength="14"
+                                       required
+                                       value="{{ old('cpf') }}">
+                                @error('cpf')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            @endif
+                            @if(empty($user->celular))
+                            <div>
+                                <label for="celular" class="block text-sm font-medium text-gray-700 mb-1">Celular*</label>
+                                <input type="text" 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500" 
+                                       id="celular" 
+                                       name="celular" 
+                                       placeholder="(00) 00000-0000"
+                                       maxlength="15"
+                                       required
+                                       value="{{ old('celular') }}">
+                                @error('celular')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                @endif
+
+                {{-- Seção de Endereço --}}
+                <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div class="bg-gray-50 px-6 py-4 border-b">
+                        <h5 class="font-semibold text-lg">Endereço de Entrega</h5>
+                    </div>
+                    <div class="p-6">
                         @if($addresses->isNotEmpty())
-                            <div class="mb-4">
-                                <label for="address_id" class="form-label">Selecionar endereço existente:</label>
-                                <select class="form-select" id="address_id" name="address_id">
+                            <div class="mb-6">
+                                <label for="address_id" class="block text-sm font-medium text-gray-700 mb-2">Selecionar endereço existente:</label>
+                                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500" id="address_id" name="address_id">
                                     <option value="">-- Selecione --</option>
                                     @foreach($addresses as $address)
-                                        {{-- MODIFICADO: Adicionado data-cep para o JS --}}
                                         <option value="{{ $address->id }}" data-cep="{{ preg_replace('/\D/', '', $address->cep) }}">
                                             {{ $address->rua }}, {{ $address->numero }} - {{ $address->cidade }}/{{ $address->estado }}
                                         </option>
@@ -35,140 +83,138 @@
                                     <option value="new">-- Cadastrar novo endereço --</option>
                                 </select>
                             </div>
-                            <hr class="my-4">
-                            <p class="text-center text-muted">Ou preencha um novo endereço abaixo:</p>
+                            <hr class="my-6">
+                            <p class="text-center text-gray-500 mb-4">Ou preencha um novo endereço abaixo:</p>
                         @else
-                            <p class="text-muted">Cadastre seu endereço de entrega:</p>
+                            <p class="text-gray-500 mb-4">Cadastre seu endereço de entrega:</p>
                         @endif
 
-                        {{-- Formulário para Novo Endereço (inicialmente escondido se houver endereços) --}}
-                        <div id="new-address-form" class="{{ $addresses->isNotEmpty() ? 'd-none' : '' }}">
-                            <div class="row g-3">
-                                <div class="col-md-9">
-                                    <label for="rua" class="form-label">Rua*</label>
-                                    <input type="text" class="form-control" id="rua" name="rua" required>
+                        {{-- Formulário para Novo Endereço --}}
+                        <div id="new-address-form" class="{{ $addresses->isNotEmpty() ? 'hidden' : '' }}">
+                            <div class="grid md:grid-cols-12 gap-4">
+                                <div class="md:col-span-9">
+                                    <label for="rua" class="block text-sm font-medium text-gray-700 mb-1">Rua*</label>
+                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500" id="rua" name="rua" required>
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="numero" class="form-label">Número*</label>
-                                    <input type="text" class="form-control" id="numero" name="numero" required>
+                                <div class="md:col-span-3">
+                                    <label for="numero" class="block text-sm font-medium text-gray-700 mb-1">Número*</label>
+                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500" id="numero" name="numero" required>
                                 </div>
-                                <div class="col-12">
-                                    <label for="complemento" class="form-label">Complemento</label>
-                                    <input type="text" class="form-control" id="complemento" name="complemento">
+                                <div class="md:col-span-12">
+                                    <label for="complemento" class="block text-sm font-medium text-gray-700 mb-1">Complemento</label>
+                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500" id="complemento" name="complemento">
                                 </div>
-                                <div class="col-md-6">
-                                    <label for="cidade" class="form-label">Cidade*</label>
-                                    <input type="text" class="form-control" id="cidade" name="cidade" required>
+                                <div class="md:col-span-6">
+                                    <label for="cidade" class="block text-sm font-medium text-gray-700 mb-1">Cidade*</label>
+                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500" id="cidade" name="cidade" required>
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="estado" class="form-label">Estado*</label>
-                                    <input type="text" class="form-control" id="estado" name="estado" required>
+                                <div class="md:col-span-3">
+                                    <label for="estado" class="block text-sm font-medium text-gray-700 mb-1">Estado*</label>
+                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500" id="estado" name="estado" required>
                                 </div>
-                                <div class="col-md-3">
-                                    <label for="cep" class="form-label">CEP*</label>
-                                    <input type="text" class="form-control" id="cep" name="cep" required>
+                                <div class="md:col-span-3">
+                                    <label for="cep" class="block text-sm font-medium text-gray-700 mb-1">CEP*</label>
+                                    <input type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500" id="cep" name="cep" required>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div> <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-white py-3">
-                        <h5 class="mb-0">Calcular Entrega</h5>
+                </div>
+
+                {{-- Seção Calcular Frete --}}
+                <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div class="bg-gray-50 px-6 py-4 border-b">
+                        <h5 class="font-semibold text-lg">Calcular Entrega</h5>
                     </div>
-                    <div class="card-body p-4">
-                        <p class="text-muted">Informe o CEP para calcular o valor da entrega.</p>
-                        <div class="form-group row">
-                            <div class="col-md-8">
-                                <label for="cep-input" class="form-label">CEP</label>
-                                <input type="text" id="cep-input" class="form-control" placeholder="Apenas 8 números" maxlength="8">
+                    <div class="p-6">
+                        <p class="text-gray-500 mb-4">Informe o CEP para calcular o valor da entrega.</p>
+                        <div class="grid md:grid-cols-3 gap-4">
+                            <div class="md:col-span-2">
+                                <label for="cep-input" class="block text-sm font-medium text-gray-700 mb-1">CEP</label>
+                                <input type="text" id="cep-input" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500" placeholder="Apenas 8 números" maxlength="8">
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label d-none d-md-block">&nbsp;</label>
-                                <button type="button" id="calculate-shipping-btn" class="btn btn-primary btn-block w-100">Calcular</button>
+                            <div class="md:col-span-1 flex items-end">
+                                <button type="button" id="calculate-shipping-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">Calcular</button>
                             </div>
                         </div>
                         
-                        <div id="shipping-results-container" class="mt-3">
-                            </div>
+                        <div id="shipping-results-container" class="mt-4"></div>
                         
-                        {{-- MODIFICADO: Removido 'required' e adicionado validação customizada --}}
                         <input type="hidden" name="shipping_service" id="shipping_service_input">
                         <input type="hidden" name="shipping_cost" id="shipping_cost_input">
                     </div>
                 </div>
-                {{-- Seção de Pagamento (Visual Placeholder) --}}
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header bg-white py-3">
-                        <h5 class="mb-0">Forma de Pagamento</h5>
+
+                {{-- Seção de Pagamento --}}
+                <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                    <div class="bg-gray-50 px-6 py-4 border-b">
+                        <h5 class="font-semibold text-lg">Forma de Pagamento</h5>
                     </div>
-                    <div class="card-body p-4">
-                        <p class="text-muted">Selecione como deseja pagar:</p>
-                        <div class="form-check mb-2">
-                            <input class="form-check-input" type="radio" name="payment_method" id="payment_pix" value="pix" checked>
-                            <label class="form-check-label" for="payment_pix">
-                                Pix (Opção Padrão por enquanto)
+                    <div class="p-6">
+                        <p class="text-gray-500 mb-4">Selecione como deseja pagar:</p>
+                        <div class="space-y-3">
+                            <label class="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                                <input type="radio" name="payment_method" id="payment_pix" value="pix" checked class="w-4 h-4 text-amber-500 focus:ring-amber-500">
+                                <span>Pix (Opção Padrão por enquanto)</span>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 border rounded-lg cursor-not-allowed opacity-50">
+                                <input type="radio" name="payment_method" id="payment_card" value="card" disabled class="w-4 h-4">
+                                <span class="text-gray-400">Cartão de Crédito (Em breve)</span>
                             </label>
                         </div>
-                        <div class="form-check mb-2">
-                            <input class="form-check-input" type="radio" name="payment_method" id="payment_card" value="card" disabled>
-                            <label class="form-check-label text-muted" for="payment_card">
-                                Cartão de Crédito (Em breve)
-                            </label>
-                        </div>
-                        {{-- Adicione outras opções visuais aqui --}}
                     </div>
                 </div>
             </div>
 
             {{-- Coluna Direita: Resumo do Pedido --}}
-            <div class="col-lg-5">
-                <div class="card shadow-sm border-0 sticky-top" style="top: 100px;">
-                    <div class="card-header bg-white py-3">
-                        <h5 class="mb-0">Resumo do Pedido</h5>
+            <div class="lg:col-span-5">
+                <div class="bg-white rounded-lg shadow-md overflow-hidden sticky top-24">
+                    <div class="bg-gray-50 px-6 py-4 border-b">
+                        <h5 class="font-semibold text-lg">Resumo do Pedido</h5>
                     </div>
-                    {{-- MODIFICADO: Adicionado data-subtotal para o JS --}}
-                    <div class="card-body p-4" data-subtotal="{{ $subTotal }}">
+                    <div class="p-6" data-subtotal="{{ $subTotal }}">
                         {{-- Listagem dos Itens --}}
                         @foreach($cartItems as $item)
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div class="d-flex align-items-center">
+                            <div class="flex justify-between items-center mb-4">
+                                <div class="flex items-center gap-3">
                                     @php $imageUrl = $item->attributes->has('image') ? asset('storage/' . $item->attributes->image) : 'https://via.placeholder.com/50'; @endphp
-                                    <img src="{{ $imageUrl }}" alt="{{ $item->name }}" class="rounded me-3" style="width: 50px; height: 50px; object-fit: contain;">
+                                    <img src="{{ $imageUrl }}" alt="{{ $item->name }}" class="w-12 h-12 object-contain rounded">
                                     <div>
-                                        <p class="mb-0 small fw-bold">{{ $item->name }}</p>
-                                        <p class="mb-0 small text-muted">Qtd: {{ $item->quantity }}</p>
+                                        <p class="text-sm font-semibold">{{ $item->name }}</p>
+                                        <p class="text-xs text-gray-500">Qtd: {{ $item->quantity }}</p>
                                     </div>
                                 </div>
-                                <span class="fw-bold small">R$ {{ number_format($item->getPriceSum(), 2, ',', '.') }}</span>
+                                <span class="font-semibold text-sm">R$ {{ number_format($item->getPriceSum(), 2, ',', '.') }}</span>
                             </div>
                         @endforeach
-                        <hr class="my-3">
+                        <hr class="my-4">
+                        
                         {{-- Subtotal --}}
-                        <div class="d-flex justify-content-between mb-2">
+                        <div class="flex justify-between mb-2">
                             <span>Subtotal</span>
                             <span>R$ {{ number_format($subTotal, 2, ',', '.') }}</span>
                         </div>
                         
-                        {{-- MODIFICADO: Frete agora é dinâmico --}}
-                        <div class="d-flex justify-content-between mb-3">
+                        {{-- Frete --}}
+                        <div class="flex justify-between mb-4">
                             <span>Frete</span>
                             <span id="summary-shipping-cost">A calcular</span>
                         </div>
-                        <hr class="my-3">
+                        <hr class="my-4">
                         
-                        {{-- MODIFICADO: Total agora é dinâmico --}}
-                        <div class="d-flex justify-content-between fw-bold h5 mt-3">
+                        {{-- Total --}}
+                        <div class="flex justify-between font-bold text-xl mt-4">
                             <span>Total</span>
                             <span id="summary-total">R$ {{ number_format($subTotal, 2, ',', '.') }}</span>
                         </div>
                         
                         {{-- Botão Finalizar --}}
-                        <div class="d-grid mt-4">
-                            <button type="submit" class="btn btn-warning btn-lg text-white fw-bold text-uppercase">
+                        <div class="mt-6">
+                            <button type="submit" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-4 px-6 rounded-lg uppercase transition-colors duration-200 text-lg">
                                 Finalizar Pedido
                             </button>
                         </div>
-                        <p class="small text-muted text-center mt-3">Ao clicar em Finalizar Pedido, você concorda com nossos <a href="#">Termos e Condições</a>.</p>
+                        <p class="text-xs text-gray-500 text-center mt-4">Ao clicar em Finalizar Pedido, você concorda com nossos <a href="#" class="underline">Termos e Condições</a>.</p>
                     </div>
                 </div>
             </div>
@@ -176,35 +222,70 @@
     </form>
 </div>
 
-{{-- Script para mostrar/esconder o formulário de novo endereço --}}
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const addressSelect = document.getElementById('address_id');
         const newAddressForm = document.getElementById('new-address-form');
-        const requiredInputs = newAddressForm.querySelectorAll('input[required]');
+        const requiredInputs = newAddressForm ? newAddressForm.querySelectorAll('input[required]') : [];
 
         if (addressSelect && newAddressForm) {
             addressSelect.addEventListener('change', function () {
                 if (this.value === 'new' || this.value === '') {
-                    newAddressForm.classList.remove('d-none');
-                    requiredInputs.forEach(input => input.required = true); // Torna os campos obrigatórios
+                    newAddressForm.classList.remove('hidden');
+                    requiredInputs.forEach(input => input.required = true);
                 } else {
-                    newAddressForm.classList.add('d-none');
-                    requiredInputs.forEach(input => input.required = false); // Torna os campos não obrigatórios
+                    newAddressForm.classList.add('hidden');
+                    requiredInputs.forEach(input => input.required = false);
                 }
             });
 
-            // Dispara o evento change na carga da página para ajustar o estado inicial
             if (addressSelect.value !== 'new' && addressSelect.value !== '') {
-                newAddressForm.classList.add('d-none');
+                newAddressForm.classList.add('hidden');
                 requiredInputs.forEach(input => input.required = false);
             } else {
                 requiredInputs.forEach(input => input.required = true);
             }
         } else if (newAddressForm) {
-            // Caso não haja select (nenhum endereço salvo), garante que os inputs são required
             requiredInputs.forEach(input => input.required = true);
+        }
+        
+        // Máscaras para CPF e Celular
+        const cpfInput = document.getElementById('cpf');
+        const celularInput = document.getElementById('celular');
+        
+        if (cpfInput) {
+            cpfInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 11) value = value.slice(0, 11);
+                
+                // Formata: 000.000.000-00
+                if (value.length > 9) {
+                    value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+                } else if (value.length > 6) {
+                    value = value.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+                } else if (value.length > 3) {
+                    value = value.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+                }
+                e.target.value = value;
+            });
+        }
+        
+        if (celularInput) {
+            celularInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length > 11) value = value.slice(0, 11);
+                
+                // Formata: (00) 00000-0000
+                if (value.length > 6) {
+                    value = value.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+                } else if (value.length > 2) {
+                    value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2');
+                } else if (value.length > 0) {
+                    value = value.replace(/(\d{0,2})/, '($1');
+                }
+                e.target.value = value;
+            });
         }
     });
 </script>
@@ -212,36 +293,25 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     
-    // --- Elementos do Frete ---
     const cepInput = document.getElementById('cep-input');
     const calculateBtn = document.getElementById('calculate-shipping-btn');
     const resultsContainer = document.getElementById('shipping-results-container');
-    
-    // ESTA LINHA AGORA É SEGURA, pois a tag meta está no layouts/main.blade.php
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    
-    // --- Inputs Escondidos do Formulário ---
     const shippingServiceInput = document.getElementById('shipping_service_input');
     const shippingCostInput = document.getElementById('shipping_cost_input');
-
-    // --- Elementos do Resumo do Pedido ---
     const summaryShippingEl = document.getElementById('summary-shipping-cost');
     const summaryTotalEl = document.getElementById('summary-total');
-    const summaryCard = document.querySelector('.card-body[data-subtotal]');
+    const summaryCard = document.querySelector('[data-subtotal]');
     const subtotal = parseFloat(summaryCard.dataset.subtotal);
-
-    // --- Elementos do Endereço ---
     const addressSelect = document.getElementById('address_id');
-    const newAddressCepInput = document.getElementById('cep'); // CEP do *novo* endereço
+    const newAddressCepInput = document.getElementById('cep');
 
-    // --- Helper de Formatação ---
     function formatCurrency(value) {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
     }
 
-    // 1. AÇÃO: Calcular Frete (Botão)
     calculateBtn.addEventListener('click', function() {
-        let cep = cepInput.value.replace(/\D/g, ''); // Limpa CEP
+        let cep = cepInput.value.replace(/\D/g, '');
 
         if (cep.length !== 8) {
             showError('CEP inválido. Digite 8 números.');
@@ -280,52 +350,45 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 2. AÇÃO: Selecionar Opção de Frete (Radio Button)
     resultsContainer.addEventListener('change', function(event) {
         if (event.target.name === 'shipping_option') {
             let selectedOption = event.target;
             let selectedPrice = parseFloat(selectedOption.getAttribute('data-price'));
             let newTotal = subtotal + selectedPrice;
 
-            // Preenche os inputs escondidos para o formulário
             shippingServiceInput.value = selectedOption.getAttribute('data-service');
             shippingCostInput.value = selectedPrice;
             
-            // Atualiza o Resumo do Pedido (na direita)
             summaryShippingEl.innerText = formatCurrency(selectedPrice);
             summaryTotalEl.innerText = formatCurrency(newTotal);
         }
     });
 
-    // 3. (BÔNUS) AÇÃO: Selecionar Endereço Salvo
     if (addressSelect) {
         addressSelect.addEventListener('change', function() {
             if (this.value !== 'new' && this.value !== '') {
-                // Tenta pegar o 'data-cep' do option selecionado
                 let selectedCep = this.options[this.selectedIndex].dataset.cep;
                 if (selectedCep) {
-                    cepInput.value = selectedCep; // Preenche o CEP do frete
+                    cepInput.value = selectedCep;
                 }
             } else {
-                 cepInput.value = ''; // Limpa se for 'novo' ou 'selecione'
+                 cepInput.value = '';
             }
         });
     }
 
-    // 4. (BÔNUS) AÇÃO: Digitar no CEP do Novo Endereço
     if (newAddressCepInput) {
         newAddressCepInput.addEventListener('keyup', function() {
-            cepInput.value = this.value.replace(/\D/g, ''); // Espelha o CEP no campo de frete
+            cepInput.value = this.value.replace(/\D/g, '');
         });
     }
 
-    // --- Funções Auxiliares de UI ---
     function showLoading() {
-        resultsContainer.innerHTML = '<div class="alert alert-info py-2">Calculando...</div>';
+        resultsContainer.innerHTML = '<div class="bg-blue-100 text-blue-800 px-4 py-2 rounded">Calculando...</div>';
     }
 
     function showError(message) {
-        resultsContainer.innerHTML = `<div class="alert alert-danger py-2">${message}</div>`;
+        resultsContainer.innerHTML = `<div class="bg-red-100 text-red-800 px-4 py-2 rounded">${message}</div>`;
         clearShipping();
     }
     
@@ -334,58 +397,46 @@ document.addEventListener('DOMContentLoaded', function() {
         options.forEach((option, index) => {
             let priceFormatted = formatCurrency(option.price);
             html += `
-                <div class="form-check border p-3 mb-2 rounded">
-                    <input class="form-check-input" type="radio" name="shipping_option" 
+                <label class="flex items-center gap-3 p-4 border rounded-lg mb-2 cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="shipping_option" 
                            id="shipping_option_${index}" 
                            value="${option.service}"
                            data-service="${option.service} (${option.carrier})"
-                           data-price="${option.price}" required>
-                           
-                    <label class="form-check-label w-100" for="shipping_option_${index}">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <strong>${option.service} (${option.carrier})</strong><br>
-                                <small class="text-muted">Prazo: ${option.deadline} dias úteis</small>
-                            </div>
-                            <strong class="text-success ms-3">${priceFormatted}</strong>
-                        </div>
-                    </label>
-                </div>
+                           data-price="${option.price}" 
+                           class="w-4 h-4 text-amber-500 focus:ring-amber-500" required>
+                    <div class="flex-1">
+                        <strong>${option.service} (${option.carrier})</strong><br>
+                        <small class="text-gray-500">Prazo: ${option.deadline} dias úteis</small>
+                    </div>
+                    <strong class="text-green-600">${priceFormatted}</strong>
+                </label>
             `;
         });
         resultsContainer.innerHTML = html;
-        // REMOVIDO: clearShipping() - não limpar mais aqui, apenas quando necessário
     }
 
     function clearShipping() {
-        // Limpa os inputs escondidos
         shippingServiceInput.value = '';
         shippingCostInput.value = '';
-        
-        // Reseta o Resumo do Pedido
         summaryShippingEl.innerText = 'A calcular';
         summaryTotalEl.innerText = formatCurrency(subtotal);
     }
 
-    // --- VALIDAÇÃO ANTES DO SUBMIT ---
     const checkoutForm = document.querySelector('form[action="{{ route("checkout.store") }}"]');
-    let isSubmitting = false; // Flag para evitar submit duplo
+    let isSubmitting = false;
     
     if (checkoutForm) {
         checkoutForm.addEventListener('submit', function(e) {
-            // Previne múltiplos submits
             if (isSubmitting) {
                 e.preventDefault();
                 return false;
             }
             
-            // Validação do endereço
             const addressId = document.getElementById('address_id')?.value;
             const newAddressForm = document.getElementById('new-address-form');
-            const isNewAddressVisible = newAddressForm && !newAddressForm.classList.contains('d-none');
+            const isNewAddressVisible = newAddressForm && !newAddressForm.classList.contains('hidden');
             
             if (!addressId || addressId === '' || addressId === 'new') {
-                // Se não há endereço selecionado, verifica se o formulário novo está visível e preenchido
                 if (isNewAddressVisible) {
                     const rua = document.getElementById('rua')?.value.trim();
                     const numero = document.getElementById('numero')?.value.trim();
@@ -413,7 +464,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            // Validação do frete
             const shippingService = shippingServiceInput.value.trim();
             const shippingCost = shippingCostInput.value.trim();
             
@@ -427,7 +477,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
             
-            // Valida se um radio foi selecionado
             const selectedShipping = document.querySelector('input[name="shipping_option"]:checked');
             if (!selectedShipping) {
                 e.preventDefault();
@@ -439,10 +488,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
             
-            // Se passou todas as validações, marca como submetendo e permite o submit
             isSubmitting = true;
             
-            // Desabilita o botão para evitar múltiplos cliques
             const submitBtn = checkoutForm.querySelector('button[type="submit"]');
             if (submitBtn) {
                 submitBtn.disabled = true;

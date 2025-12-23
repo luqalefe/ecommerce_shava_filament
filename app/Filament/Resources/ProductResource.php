@@ -116,42 +116,46 @@ class ProductResource extends Resource
                             ->schema([
                                 Forms\Components\TextInput::make('weight')
                                     ->label('Peso (kg)')
-                                    ->numeric()
                                     ->required()
-                                    ->minValue(0.01)
-                                    ->step(0.01)
                                     ->suffix('kg')
-                                    ->default(0.5)
+                                    ->default('0.5')
+                                    ->placeholder('Ex: 0.5')
+                                    ->inputMode('decimal')
+                                    ->rule('numeric')
+                                    ->rule('min:0.01')
                                     ->helperText('Peso do produto em quilogramas'),
 
                                 Forms\Components\Grid::make(3)
                                     ->schema([
                                         Forms\Components\TextInput::make('height')
                                             ->label('Altura (cm)')
-                                            ->numeric()
                                             ->required()
-                                            ->minValue(1)
-                                            ->step(0.1)
                                             ->suffix('cm')
-                                            ->default(10),
+                                            ->default('10')
+                                            ->placeholder('10')
+                                            ->inputMode('decimal')
+                                            ->rule('numeric')
+                                            ->rule('min:1'),
 
                                         Forms\Components\TextInput::make('width')
                                             ->label('Largura (cm)')
-                                            ->numeric()
                                             ->required()
-                                            ->minValue(1)
-                                            ->step(0.1)
                                             ->suffix('cm')
-                                            ->default(10),
+                                            ->default('10')
+                                            ->placeholder('15')
+                                            ->inputMode('decimal')
+                                            ->rule('numeric')
+                                            ->rule('min:1'),
 
                                         Forms\Components\TextInput::make('length')
                                             ->label('Comprimento (cm)')
-                                            ->numeric()
                                             ->required()
-                                            ->minValue(1)
-                                            ->step(0.1)
                                             ->suffix('cm')
-                                            ->default(10),
+                                            ->default('10')
+                                            ->placeholder('20')
+                                            ->inputMode('decimal')
+                                            ->rule('numeric')
+                                            ->rule('min:1'),
                                     ]),
                             ])
                             ->collapsible(),
