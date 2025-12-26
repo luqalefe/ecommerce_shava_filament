@@ -1,0 +1,92 @@
+<?php
+/**
+ * Script de Otimização para Produção (Hostinger)
+ * 
+ * EXECUTE UMA VEZ após o deploy e DELETE IMEDIATAMENTE!
+ * Acesse via navegador: https://seudominio.com.br/optimize.php
+ */
+
+// Caminho para o Laravel (fora do public_html)
+$laravelPath = dirname(__DIR__) . '/laravel';
+
+// Verificar senha
+$password = 'SHAVA2024_DEPLOY'; // Altere esta senha!
+if (!isset($_GET['key']) || $_GET['key'] !== $password) {
+    die('❌ Acesso negado. Use: optimize.php?key=' . $password);
+}
+
+// Carregar Laravel
+require $laravelPath . '/vendor/autoload.php';
+$app = require_once $laravelPath . '/bootstrap/app.php';
+$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel->bootstrap();
+
+echo "<h1>🚀 Otimizando Laravel para Produção</h1>";
+echo "<pre>";
+
+try {
+    // Cache de configuração
+    echo "📦 Criando cache de configuração...\n";
+    Artisan::call('config:cache');
+    echo "✅ Config cache criado\n\n";
+
+    // Cache de rotas
+    echo "📦 Criando cache de rotas...\n";
+    Artisan::call('route:cache');
+    echo "✅ Route cache criado\n\n";
+
+    // Cache de views
+    echo "📦 Criando cache de views...\n";
+    Artisan::call('view:cache');
+    echo "✅ View cache criado\n\n";
+
+    // Cache de ícones do Filament
+    echo "📦 Criando cache de ícones (Filament)...\n";
+    Artisan::call('icons:cache');
+    echo "✅ Icon cache criado\n\n";
+
+    // Otimização geral
+    echo "📦 Executando otimização geral...\n";
+    Artisan::call('optimize');
+    echo "✅ Otimização concluída\n\n";
+
+    // Verificar permissões
+    echo "🔒 Verificando permissões...\n";
+    $storagePath = $laravelPath . '/storage';
+    $cachePath = $laravelPath . '/bootstrap/cache';
+    
+    if (is_writable($storagePath)) {
+        echo "✅ Storage é gravável\n";
+    } else {
+        echo "⚠️ Storage NÃO é gravável - configure permissões 755\n";
+    }
+    
+    if (is_writable($cachePath)) {
+        echo "✅ Bootstrap/cache é gravável\n";
+    } else {
+        echo "⚠️ Bootstrap/cache NÃO é gravável - configure permissões 755\n";
+    }
+    
+    echo "\n";
+    
+    // Verificar link simbólico de storage
+    echo "🔗 Verificando link simbólico de storage...\n";
+    $publicStorage = __DIR__ . '/storage';
+    if (is_link($publicStorage) || file_exists($publicStorage)) {
+        echo "✅ Link simbólico de storage existe\n";
+    } else {
+        echo "⚠️ Link simbólico de storage NÃO existe\n";
+        echo "   Execute migrate.php primeiro\n";
+    }
+    
+    echo "\n";
+    echo "✅ <strong>Otimização concluída com sucesso!</strong>\n";
+    echo "\n";
+    echo "⚠️ <strong>IMPORTANTE: DELETE ESTE ARQUIVO AGORA!</strong>\n";
+    
+} catch (Exception $e) {
+    echo "❌ Erro: " . $e->getMessage() . "\n";
+    echo "Stack trace:\n" . $e->getTraceAsString() . "\n";
+}
+
+echo "</pre>";

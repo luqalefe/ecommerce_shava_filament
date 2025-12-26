@@ -1,0 +1,36 @@
+<?php
+/**
+ * Laravel Production Index File
+ * Para hospedagem compartilhada (Hostinger)
+ * 
+ * Este arquivo deve ficar em public_html/index.php
+ * O código Laravel deve estar em ../laravel/
+ */
+
+use Illuminate\Contracts\Http\Kernel;
+use Illuminate\Http\Request;
+
+define('LARAVEL_START', microtime(true));
+
+// Caminho para o código Laravel (fora do public_html)
+$laravelPath = dirname(__DIR__) . '/laravel';
+
+// Verificar manutenção
+if (file_exists($maintenance = $laravelPath . '/storage/framework/maintenance.php')) {
+    require $maintenance;
+}
+
+// Autoloader
+require $laravelPath . '/vendor/autoload.php';
+
+// Bootstrap da aplicação
+$app = require_once $laravelPath . '/bootstrap/app.php';
+
+// Executar
+$kernel = $app->make(Kernel::class);
+
+$response = $kernel->handle(
+    $request = Request::capture()
+)->send();
+
+$kernel->terminate($request, $response);

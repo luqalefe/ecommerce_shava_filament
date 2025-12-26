@@ -1,0 +1,57 @@
+<?php
+/**
+ * Script de Migração para Produção
+ * 
+ * EXECUTE UMA VEZ e DELETE IMEDIATAMENTE após uso!
+ * Acesse via navegador: https://seudominio.com.br/migrate.php
+ */
+
+// Caminho para o Laravel
+$laravelPath = dirname(__DIR__) . '/laravel';
+
+// Verificar senha
+$password = 'SHAVA2024_DEPLOY'; // Altere esta senha!
+if (!isset($_GET['key']) || $_GET['key'] !== $password) {
+    die('❌ Acesso negado. Use: migrate.php?key=' . $password);
+}
+
+// Carregar Laravel
+require $laravelPath . '/vendor/autoload.php';
+$app = require_once $laravelPath . '/bootstrap/app.php';
+$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel->bootstrap();
+
+echo "<h1>🗄️ Executando Migrações</h1>";
+echo "<pre>";
+
+try {
+    // Executar migrations
+    echo "📦 Executando migrations...\n";
+    Artisan::call('migrate', ['--force' => true]);
+    echo Artisan::output();
+    echo "\n✅ Migrations executadas!\n\n";
+    
+    // Criar link de storage
+    echo "🔗 Criando link de storage...\n";
+    $target = $laravelPath . '/storage/app/public';
+    $link = __DIR__ . '/storage';
+    
+    if (is_link($link) || file_exists($link)) {
+        echo "✅ Link de storage já existe\n";
+    } elseif (symlink($target, $link)) {
+        echo "✅ Link de storage criado!\n";
+    } else {
+        echo "⚠️ Não foi possível criar link simbólico\n";
+    }
+    
+    echo "\n";
+    echo "✅ <strong>Configuração concluída!</strong>\n";
+    echo "\n";
+    echo "⚠️ <strong>IMPORTANTE: DELETE ESTE ARQUIVO AGORA!</strong>\n";
+    
+} catch (Exception $e) {
+    echo "❌ Erro: " . $e->getMessage() . "\n";
+    echo "Stack trace:\n" . $e->getTraceAsString() . "\n";
+}
+
+echo "</pre>";
