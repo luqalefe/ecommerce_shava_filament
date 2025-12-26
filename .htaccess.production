@@ -30,10 +30,9 @@
     Deny from all
 </FilesMatch>
 
-# Proteger diretórios
-<IfModule mod_rewrite.c>
-    RewriteRule ^(app|bootstrap|config|database|resources|routes|storage|tests|vendor)/ - [F,L]
-</IfModule>
+# NOTA: Na estrutura separada (Laravel fora do public_html),
+# não é necessário bloquear diretórios aqui - eles já estão protegidos.
+
 
 # Otimizações de Performance
 <IfModule mod_expires.c>
