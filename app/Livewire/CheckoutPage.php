@@ -6,6 +6,8 @@ use App\Services\FrenetService;
 use App\Services\MercadoPagoService;
 use App\Models\Endereco;
 use App\Models\Order;
+use App\Models\Product;
+use App\Rules\Cpf;
 use Darryldecode\Cart\Facades\CartFacade as Cart;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -320,7 +322,7 @@ class CheckoutPage extends Component
         $cepClean = preg_replace('/\D/', '', $this->cep);
         
         // Regras dinâmicas para CPF e Celular
-        $cpfRule = $this->needsCpf ? 'required|string|min:11|max:14' : 'nullable';
+        $cpfRule = $this->needsCpf ? ['required', 'string', new Cpf] : 'nullable';
         $celularRule = $this->needsCelular ? 'required|string|min:10|max:15' : 'nullable';
         
         $this->validate([
@@ -373,13 +375,22 @@ class CheckoutPage extends Component
         
         $cartItems = Cart::getContent();
         $cartSubTotal = Cart::getSubTotal();
-        $shippingCost = (float) $this->shippingCost;
-        $totalAmount = $cartSubTotal + $shippingCost;
 
         if ($cartItems->isEmpty()) {
             session()->flash('error', 'Seu carrinho está vazio.');
             return redirect()->route('cart.index');
         }
+
+        // ========================================================
+        // SEGURANÇA: Recalcular frete no servidor para evitar manipulação
+        // ========================================================
+        $shippingCost = $this->recalculateAndValidateShipping($cartItems, $cartSubTotal);
+        if ($shippingCost === false) {
+            return; // Erro já foi adicionado no método
+        }
+        
+        $totalAmount = $cartSubTotal + $shippingCost;
+
 
         try {
             DB::beginTransaction();
@@ -394,40 +405,67 @@ class CheckoutPage extends Component
                 'cep' => preg_replace('/\D/', '', $this->cep),
             ]);
 
-            // Criar pedido
+            // Criar pedido preliminar (será atualizado com valores reais)
             $order = Order::create([
                 'user_id' => $user->id,
                 'endereco_id' => $endereco->id,
                 'status' => 'pending',
-                'total_amount' => $totalAmount,
+                'total_amount' => 0, // Será recalculado
                 'shipping_cost' => $shippingCost,
                 'shipping_service' => $this->shippingService,
                 'payment_method' => $this->paymentMethod,
             ]);
 
-            // Adicionar itens ao pedido
+            // Adicionar itens ao pedido com validação de estoque e preço
             $cartItemsArray = [];
+            $serverSubTotal = 0;
+
             foreach ($cartItems as $item) {
+                // SEGURANÇA: Lock pessimista para evitar race condition (Bug #10)
+                $product = Product::lockForUpdate()->find($item->id);
+
+                if (!$product) {
+                    throw new \Exception("Produto '{$item->name}' não encontrado ou indisponível.");
+                }
+
+                // SEGURANÇA: Validação de Estoque (Bug #9)
+                if ($product->quantity < $item->quantity) {
+                    throw new \Exception("Estoque insuficiente para o produto '{$product->name}'. Restam apenas {$product->quantity} unidades.");
+                }
+
+                // SEGURANÇA: Validação de Preço (Bug #3) - Usa preço do banco, não da sessão
+                $realPrice = $product->sale_price ?? $product->price;
+                
+                // Opcional: Verificar discrepância absurda de preço se necessário
+                // if (abs($realPrice - $item->price) > 0.1) { Warning... }
+
+                $serverSubTotal += $realPrice * $item->quantity;
+
                 $order->items()->create([
-                    'product_id' => $item->id,
+                    'product_id' => $product->id,
                     'quantity' => $item->quantity,
-                    'price' => $item->price,
+                    'price' => $realPrice,
                 ]);
 
+                // SEGURANÇA: Decrementar Estoque (Bug #9)
+                $product->decrement('quantity', $item->quantity);
+
                 $cartItemsArray[] = [
-                    'id' => (string) $item->id,
-                    'name' => $item->name,
+                    'id' => (string) $product->id,
+                    'name' => $product->name,
                     'quantity' => $item->quantity,
-                    'price' => (float) $item->price,
+                    'price' => (float) $realPrice,
                 ];
             }
 
+            // Atualiza o total do pedido com o subtotal recalculado + frete validado
+            $validatedTotal = $serverSubTotal + $shippingCost;
+            $order->update(['total_amount' => $validatedTotal]);
+
             // Processar pagamento baseado no método selecionado
             if ($this->paymentMethod === 'mercadopago') {
-                // Processar com Mercado Pago
                 return $this->processMercadoPagoPayment($order, $cartItemsArray, $shippingCost, $user, $endereco);
             } else {
-                // Processar com Abacate Pay (PIX) - código original
                 return $this->processAbacatePayPayment($order, $cartItems, $shippingCost, $user);
             }
         } catch (\Exception $e) {
@@ -621,6 +659,113 @@ class CheckoutPage extends Component
             DB::rollBack();
             Log::error('Erro ao processar pagamento Abacate Pay: ' . $e->getMessage());
             throw $e;
+        }
+    }
+
+    /**
+     * Recalcula e valida o frete no servidor para evitar manipulação
+     * Retorna o valor do frete validado ou false em caso de erro
+     */
+    private function recalculateAndValidateShipping($cartItems, $cartSubTotal)
+    {
+        // 1. Validar se uma opção de frete foi selecionada
+        if ($this->selectedShipping === null || !isset($this->shippingOptions[$this->selectedShipping])) {
+            $this->addError('shippingService', 'Por favor, selecione uma opção de frete válida.');
+            return false;
+        }
+
+        $selectedOption = $this->shippingOptions[$this->selectedShipping];
+        
+        // 2. Verificar se a opção selecionada corresponde ao serviço esperado
+        // Isso previne que o usuário manipule o array shippingOptions via JS
+        // Recalculamos as opções de frete com os dados atuais do servidor
+        
+        // Verificar se é Rio Branco - AC (frete grátis) - Lógica deve ser IDÊNTICA ao calculateShipping
+        $cidadeNormalizada = mb_strtolower(trim($this->cidade ?? ''));
+        $estadoNormalizado = mb_strtoupper(trim($this->estado ?? ''));
+        $isRioBranco = in_array($cidadeNormalizada, ['rio branco', 'riobranco']);
+        $isAcre = $estadoNormalizado === 'AC';
+        
+        if ($isRioBranco && $isAcre) {
+            // Se for Rio Branco, o frete DEVE ser 0
+            // Assumindo que é a única opção conforme calculateShipping:
+            return 0.0;
+        }
+
+        // Se não for Rio Branco, recotamos na Frenet para garantir que o valor está correto
+        
+        $itemsParaCotacao = [];
+        foreach ($cartItems as $cartItem) {
+            if (!$cartItem->associatedModel) continue;
+            
+            $product = $cartItem->associatedModel;
+            $itemsParaCotacao[] = [
+                'sku' => $product->sku ?? $cartItem->id,
+                'quantity' => (int) $cartItem->quantity,
+                'weight' => (float) ($product->weight ?? 0.1),
+                'height' => (float) ($product->height ?? 10),
+                'width' => (float) ($product->width ?? 10),
+                'length' => (float) ($product->length ?? 10),
+                'category' => 'Geral'
+            ];
+        }
+
+        // Se não tem itens válidos, algo está errado
+        if (empty($itemsParaCotacao)) {
+             $this->addError('payment', 'Erro ao validar itens do carrinho para cálculo de frete.');
+             return false;
+        }
+
+        try {
+            // Recalcula opções
+            $cep = preg_replace('/\D/', '', $this->cep);
+            
+            // Reutiliza o serviço Frenet injetado
+            $validOptions = $this->frenetService->calculate(
+                $cep,
+                $cartSubTotal,
+                $itemsParaCotacao
+            );
+            
+            // Procura a opção selecionada nas opções válidas retornadas agora pela API
+            $found = false;
+            $validatedCost = 0.0;
+            
+            $selectedServiceName = $selectedOption['service'] . ' (' . $selectedOption['carrier'] . ')';
+            
+            foreach ($validOptions as $option) {
+                $optionName = $option['service'] . ' (' . $option['carrier'] . ')';
+                
+                // Compara nome do serviço
+                if ($optionName === $selectedServiceName) {
+                    $found = true;
+                    $validatedCost = (float) $option['price'];
+                    break;
+                }
+            }
+            
+            if (!$found) {
+                // Se a opção selecionada não existe mais
+                $this->addError('shippingService', 'A opção de frete selecionada não é mais válida. Por favor, selecione novamente.');
+                $this->calculateShipping($cep); // Recarrega as opções na tela
+                return false;
+            }
+            
+            // Verifica se o valor enviado pelo cliente bate com o valor recalculado
+            // Margem de erro de 1 centavo
+            if (abs((float)$this->shippingCost - $validatedCost) > 0.01) {
+                $this->addError('shippingCost', 'O valor do frete mudou. Por favor, revise o pedido.');
+                $this->calculateShipping($cep); // Atualiza os valores na tela
+                return false;
+            }
+            
+            return $validatedCost;
+
+        } catch (\Exception $e) {
+            Log::error('Erro ao revalidar frete no checkout: ' . $e->getMessage());
+            // Em caso de erro na API de frete no momento do checkout, bloqueia por segurança
+            $this->addError('shippingService', 'Não foi possível validar o frete. Tente novamente em instantes.');
+            return false;
         }
     }
 

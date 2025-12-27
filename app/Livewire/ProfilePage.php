@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
+use App\Rules\Cpf;
 
 #[Layout('components.layouts.app')]
 class ProfilePage extends Component
@@ -41,7 +42,7 @@ class ProfilePage extends Component
             'name' => 'required|string|min:3|max:255',
             'email' => 'required|email|unique:users,email,' . Auth::id(),
             'celular' => 'nullable|string|max:20',
-            'cpf' => 'nullable|string|max:14',
+            'cpf' => ['nullable', 'string', new Cpf],
         ], [
             'name.required' => 'O campo nome é obrigatório.',
             'name.min' => 'O nome deve ter no mínimo 3 caracteres.',

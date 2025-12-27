@@ -122,4 +122,5 @@ Route::post('/logout', [\App\Http\Controllers\Auth\AuthenticatedSessionControlle
     ->name('logout');
 
 // Inclui outras rotas de autenticação (senha esquecida, etc.) do Breeze
+// Inclui outras rotas de autenticação (senha esquecida, etc.) do Breeze
 require __DIR__ . '/auth.php';

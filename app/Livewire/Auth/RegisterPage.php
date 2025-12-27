@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
+use App\Rules\Cnpj;
+use App\Rules\Cpf;
 
 #[Layout('components.layouts.app')]
 class RegisterPage extends Component
@@ -58,13 +60,13 @@ class RegisterPage extends Component
 
         // Regras para Pessoa Física
         if ($this->user_type === 'pf') {
-            $rules['cpf'] = 'required|string|size:14'; // Formato: XXX.XXX.XXX-XX
+            $rules['cpf'] = ['required', 'string', new Cpf];
             $rules['celular'] = 'nullable|string|max:15';
         }
 
         // Regras para Pessoa Jurídica
         if ($this->user_type === 'pj') {
-            $rules['cnpj'] = 'required|string|size:18'; // Formato: XX.XXX.XXX/XXXX-XX
+            $rules['cnpj'] = ['required', 'string', new Cnpj];
             $rules['razao_social'] = 'required|string|min:3|max:255';
             $rules['nome_fantasia'] = 'nullable|string|max:255';
             $rules['inscricao_estadual'] = 'nullable|string|max:20';
@@ -92,10 +94,10 @@ class RegisterPage extends Component
         'password.confirmed' => 'As senhas não coincidem.',
         // PF
         'cpf.required' => 'O CPF é obrigatório.',
-        'cpf.size' => 'CPF inválido. Use o formato: XXX.XXX.XXX-XX',
+        // removido cpf.size pois a regra Cpf já valida
         // PJ
         'cnpj.required' => 'O CNPJ é obrigatório para empresas.',
-        'cnpj.size' => 'CNPJ inválido. Use o formato: XX.XXX.XXX/XXXX-XX',
+        // removido cnpj.size pois a regra Cnpj já valida
         'razao_social.required' => 'A Razão Social é obrigatória para empresas.',
         'razao_social.min' => 'A Razão Social deve ter no mínimo 3 caracteres.',
         // Endereço
@@ -173,5 +175,3 @@ class RegisterPage extends Component
         return view('livewire.auth.register-page');
     }
 }
-
-
