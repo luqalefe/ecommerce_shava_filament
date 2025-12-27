@@ -34,6 +34,8 @@ class AppServiceProvider extends ServiceProvider
         }
 
         // Tenta compartilhar as categorias com a view do navbar
+        // Tenta compartilhar as categorias com a view do navbar
+        /*
         try {
             // Verifica se a tabela 'categories' existe no banco de dados.
             if (Schema::hasTable('categories')) {
@@ -54,6 +56,7 @@ class AppServiceProvider extends ServiceProvider
             // Se qualquer erro inesperado ocorrer (ex: problema de conexão com BD),
             Log::error("Erro no AppServiceProvider ao buscar categorias globais para o navbar: " . $e->getMessage());
         }
+        */
 
 
         // --- INÍCIO DA CONFIGURAÇÃO ABACATE PAY ---
@@ -66,6 +69,6 @@ class AppServiceProvider extends ServiceProvider
 
         // Registrar Observer para notificações de mudança de status
         // O Observer agora está seguro: não bloqueia o save mesmo se houver erro de email
-        Order::observe(OrderObserver::class);
+        // Order::observe(OrderObserver::class);
     }
 }

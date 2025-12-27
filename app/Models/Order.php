@@ -20,6 +20,9 @@ class Order extends Model
         'shipping_service',
         'payment_method',
         'payment_id',
+        'carrier_name',
+        'tracking_code',
+        'tracking_url',
     ];
 
     public function user(): BelongsTo

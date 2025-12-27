@@ -21,3 +21,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 
 // Webhook do Mercado Pago
 Route::post('/mercadopago/webhook', [MercadoPagoController::class, 'handleWebhook']);
+
+// Webhook do Abacate Pay
+use App\Http\Controllers\AbacatePayWebhookController;
+Route::post('/webhooks/abacatepay', [AbacatePayWebhookController::class, 'handle']);

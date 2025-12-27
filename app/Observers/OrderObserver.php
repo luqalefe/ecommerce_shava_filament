@@ -29,6 +29,9 @@ class OrderObserver
             // Envia notificação ao cliente de forma assíncrona (não bloqueia o save)
             // Usa dispatch para executar após a resposta HTTP
             // IMPORTANTE: Este código NUNCA deve lançar exceção para não bloquear o save
+            // O Observer estava causando timeout (tela preta) e duplicidade de emails.
+            // Desabilitado temporariamente em favor da notificação manual no OrderResource.
+            /*
             dispatch(function () use ($order, $oldStatus, $newStatus, $userId) {
                 try {
                     // Busca o pedido novamente para garantir que tem os dados atualizados
@@ -65,6 +68,7 @@ class OrderObserver
                     ]);
                 }
             })->afterResponse();
+            */
         }
     }
 }
