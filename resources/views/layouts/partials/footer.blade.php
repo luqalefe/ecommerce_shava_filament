@@ -9,7 +9,11 @@
 
             {{-- Coluna 1: Logo e Descrição (Mobile: Full, Medium: Full, Large: 1/3) --}}
             <div class="col-span-12 lg:col-span-4 text-center lg:text-left">
-                <img src="{{ asset('images/logo_shava.png') }}" alt="Logo Shava Haux" class="h-12 mx-auto lg:mx-0 mb-4 opacity-90">
+                @php
+                    $logoPath = \App\Models\SiteSetting::get('logo_footer') ?: \App\Models\SiteSetting::get('logo');
+                    $logoUrl = $logoPath ? asset('storage/' . $logoPath) : asset('images/logo_shava.png');
+                @endphp
+                <img src="{{ $logoUrl }}" alt="Logo Shava Haux" class="h-12 mx-auto lg:mx-0 mb-4 opacity-90">
                 <p class="text-sm text-[var(--sh-text-light)] leading-relaxed">Expandindo a consciência através de aromas e sensações.</p>
             </div>
 

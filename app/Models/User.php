@@ -9,7 +9,10 @@ use Illuminate\Notifications\Notifiable;
 use App\Models\Order;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class User extends Authenticatable implements MustVerifyEmail
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
+
+class User extends Authenticatable implements MustVerifyEmail, FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
@@ -92,6 +95,19 @@ class User extends Authenticatable implements MustVerifyEmail
     public function canAccessAdmin(): bool
     {
         return $this->isAdmin() || $this->isLogistica();
+    }
+
+    /**
+     * Implementação obrigatória do Filament v3 para acesso em produção
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        // Se for o painel admin e o usuário tiver permissão
+        if ($panel->getId() === 'admin') {
+            return $this->canAccessAdmin();
+        }
+
+        return false;
     }
 
     /**

@@ -23,15 +23,7 @@ class OrderResource extends Resource
     protected static ?string $navigationGroup = 'Gestão da Loja';
     protected static ?int $navigationSort = 1;
 
-    /**
-     * Filtra para mostrar apenas pedidos com pagamento aprovado
-     * Exclui pedidos pendentes (aguardando pagamento) e cancelados
-     */
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()
-            ->whereNotIn('status', ['pending', 'cancelled']);
-    }
+    // Filtro global removido para exibir todos os pedidos (pendentes e cancelados)
 
     public static function form(Form $form): Form
     {
@@ -58,16 +50,16 @@ class OrderResource extends Resource
             // Admin pode editar todos os campos
             $schema = [
                 Forms\Components\Select::make('user_id')
-                    ->label('Cliente')
+                    ->label('Nome Completo')
                     ->relationship('user', 'name')
                     ->required()
                     ->searchable()
                     ->preload(),
                 Forms\Components\Select::make('endereco_id')
-                    ->label('Endereço')
-                    ->relationship('endereco', 'rua')
-                    ->required()
-                    ->searchable()
+                    ->label('Endereço Completo')
+                    ->relationship('endereco', 'rua') // Mantém para carregar a relação
+                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->full_address)
+                    ->searchable(['rua', 'numero', 'cidade', 'cep', 'bairro'])
                     ->preload(),
                 Forms\Components\Select::make('status')
                     ->label('Status')

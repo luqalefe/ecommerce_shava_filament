@@ -346,19 +346,7 @@
                         
                         <div class="payment-options">
                             {{-- PIX --}}
-                            <label class="payment-option {{ $paymentMethod === 'pix' ? 'selected' : '' }}">
-                                <input type="radio" wire:model="paymentMethod" value="pix">
-                                <div class="payment-icon pix">
-                                    <svg viewBox="0 0 512 512" fill="currentColor">
-                                        <path d="M242.4 292.5c-2.3-2.3-6.1-2.3-8.5 0l-56.5 56.5c-15.7 15.7-41 15.7-56.6 0-15.6-15.6-15.6-41 0-56.6l56.5-56.5c2.3-2.3 2.3-6.1 0-8.5l-14.1-14.1c-2.3-2.3-6.1-2.3-8.5 0l-56.5 56.5c-28.1 28.1-28.1 73.6 0 101.7 28.1 28.1 73.6 28.1 101.7 0l56.5-56.5c2.3-2.3 2.3-6.1 0-8.5l-14-14zm142.3-142.3l-56.5 56.5c-2.3 2.3-2.3 6.1 0 8.5l14.1 14.1c2.3 2.3 6.1 2.3 8.5 0l56.5-56.5c15.6-15.6 41-15.6 56.6 0 15.6 15.6 15.6 41 0 56.6l-56.5 56.5c-2.3 2.3-2.3 6.1 0 8.5l14.1 14.1c2.3 2.3 6.1 2.3 8.5 0l56.5-56.5c28.1-28.1 28.1-73.6 0-101.7-28.2-28.1-73.7-28.1-101.8 0z"/>
-                                    </svg>
-                                </div>
-                                <div class="payment-info">
-                                    <span class="payment-name">PIX</span>
-                                    <span class="payment-badge instant">Instantâneo</span>
-                                    <span class="payment-desc">Pagamento aprovado na hora</span>
-                                </div>
-                            </label>
+                            {{-- PIX (Removido - Agora via Mercado Pago) --}}
 
                             {{-- Mercado Pago --}}
                             <label class="payment-option {{ $paymentMethod === 'mercadopago' ? 'selected' : '' }}">
@@ -448,9 +436,7 @@
                                 <span>Total</span>
                                 <div class="final-value">
                                     <span class="total-price">R$ {{ number_format($total, 2, ',', '.') }}</span>
-                                    @if($paymentMethod === 'pix')
-                                        <span class="pix-discount">5% OFF no PIX aplicado!</span>
-                                    @endif
+                                    {{-- Desconto PIX removido --}}
                                 </div>
                             </div>
                             

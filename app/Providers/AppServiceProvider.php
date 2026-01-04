@@ -35,28 +35,15 @@ class AppServiceProvider extends ServiceProvider
 
         // Tenta compartilhar as categorias com a view do navbar
         // Tenta compartilhar as categorias com a view do navbar
-        /*
         try {
-            // Verifica se a tabela 'categories' existe no banco de dados.
-            if (Schema::hasTable('categories')) {
-
-                // Define um View Composer que será executado APENAS quando a view 'layouts.partials.navbar' for renderizada.
-                View::composer('layouts.partials.navbar', function ($view) {
-
-                    // Busca as categorias PAI (onde parent_id é null)
-                    $globalCategories = Category::whereNull('parent_id')
-                                                ->with('children')
-                                                ->get();
-
-                    // Envia a variável $globalCategories para a view ('layouts.partials.navbar').
-                    $view->with('globalCategories', $globalCategories);
-                });
-            }
+            // Define um View Composer para a navbar
+            // Removido Schema::hasTable para evitar erro de 'SYSTEM VERSIONED' em alguns drivers MySQL/MariaDB
+            View::composer('layouts.partials.navbar', function ($view) {
+                $view->with('globalCategories', Category::whereNull('parent_id')->with('children')->get());
+            });
         } catch (\Exception $e) {
-            // Se qualquer erro inesperado ocorrer (ex: problema de conexão com BD),
-            Log::error("Erro no AppServiceProvider ao buscar categorias globais para o navbar: " . $e->getMessage());
+            Log::error("Erro no AppServiceProvider: " . $e->getMessage());
         }
-        */
 
 
         // --- INÍCIO DA CONFIGURAÇÃO ABACATE PAY ---

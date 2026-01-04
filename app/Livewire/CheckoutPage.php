@@ -32,7 +32,7 @@ class CheckoutPage extends Component
     public $shippingCost = 0;
     public $shippingService = '';
     
-    public $paymentMethod = 'pix';
+    public $paymentMethod = 'mercadopago';
     
     // Campos de perfil (CPF e Celular)
     public $cpf = '';
@@ -338,7 +338,7 @@ class CheckoutPage extends Component
             }],
             'shippingService' => 'required|string',
             'shippingCost' => 'required|numeric|min:0',
-            'paymentMethod' => 'required|string|in:pix,mercadopago',
+            'paymentMethod' => 'required|string|in:mercadopago',
             'cpf' => $cpfRule,
             'celular' => $celularRule,
         ], [
@@ -396,10 +396,12 @@ class CheckoutPage extends Component
             DB::beginTransaction();
 
             // Criar endereço
+            // Criar endereço
             $endereco = $user->enderecos()->create([
                 'rua' => $this->rua,
                 'numero' => $this->numero,
                 'complemento' => $this->complemento,
+                'bairro' => $this->bairro, // <-- Adicionado
                 'cidade' => $this->cidade,
                 'estado' => strtoupper($this->estado),
                 'cep' => preg_replace('/\D/', '', $this->cep),
@@ -546,119 +548,6 @@ class CheckoutPage extends Component
                 'order_id' => $order->id ?? null,
             ]);
             throw $e; // Re-throw para ser capturado no método principal
-        }
-    }
-
-    /**
-     * Processa pagamento via Abacate Pay (PIX)
-     */
-    private function processAbacatePayPayment($order, $cartItems, float $shippingCost, $user)
-    {
-        try {
-            // Preparar payload para Abacate Pay
-            $productsPayload = [];
-            foreach ($cartItems as $item) {
-                $productsPayload[] = [
-                    'externalId' => (string) $item->id,
-                    'name' => $item->name,
-                    'quantity' => $item->quantity,
-                    'price' => (int) ($item->price * 100),
-                ];
-            }
-
-            // Adicionar frete como produto
-            if ($shippingCost > 0) {
-                $shippingServiceName = mb_substr($this->shippingService, 0, 50);
-                $shippingServiceName = preg_replace('/[^\w\s\-\(\)]/', '', $shippingServiceName);
-                
-                $productsPayload[] = [
-                    'externalId' => 'SHIPPING_' . $order->id,
-                    'name' => 'Taxa de Entrega (' . $shippingServiceName . ')',
-                    'quantity' => 1,
-                    'price' => (int) ($shippingCost * 100),
-                ];
-            }
-
-            // Verificar CPF e Celular (já devem ter sido atualizados no placeOrder)
-            if (empty($user->cpf) || empty($user->celular)) {
-                $this->addError('payment', 'Por favor, preencha seu CPF e Celular para continuar.');
-                DB::rollBack();
-                return;
-            }
-
-            // Dados do Cliente para Abacate Pay
-            $customerData = [
-                'name' => $user->name,
-                'email' => $user->email,
-                'cellphone' => preg_replace('/\D/', '', $user->celular),
-                'taxId' => preg_replace('/\D/', '', $user->cpf),
-            ];
-
-            // Validações
-            $apiKey = config('services.abacatepay.key');
-            if (empty($apiKey)) {
-                throw new \Exception('Chave da API Abacate Pay não configurada. Verifique o arquivo .env');
-            }
-
-            if (strlen($customerData['taxId']) !== 11) {
-                throw new \Exception('CPF inválido: deve ter 11 dígitos');
-            }
-
-            if (strlen($customerData['cellphone']) < 10) {
-                throw new \Exception('Celular inválido: deve ter pelo menos 10 dígitos');
-            }
-
-            // Payload para Abacate Pay
-            $billingData = [
-                'frequency' => 'ONE_TIME',
-                'methods' => ['PIX'],
-                'products' => $productsPayload,
-                'returnUrl' => route('cart.index'),
-                'completionUrl' => route('checkout.success'),
-                'customer' => $customerData,
-                'description' => "Pedido #" . $order->id,
-            ];
-
-            // Validação do payload
-            foreach ($billingData['products'] as $product) {
-                if (!isset($product['price']) || $product['price'] <= 0) {
-                    throw new \Exception('Produto com preço inválido: ' . ($product['name'] ?? 'Desconhecido'));
-                }
-            }
-
-            $apiUrl = 'https://api.abacatepay.com/v1/billing/create';
-
-            Log::info('Requisição para AbacatePay:', ['body' => $billingData]);
-
-            // Chamar API Abacate Pay
-            $response = Http::withToken($apiKey)->post($apiUrl, $billingData);
-            $paymentResponse = $response->json();
-
-            Log::info('Resposta da API AbacatePay:', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
-
-            if ($response->successful() && isset($paymentResponse['data']['id']) && isset($paymentResponse['data']['url'])) {
-                $order->update([
-                    'payment_id' => $paymentResponse['data']['id'],
-                ]);
-
-                DB::commit();
-                Cart::clear();
-
-                return redirect()->away($paymentResponse['data']['url']);
-            } else {
-                $errorMessage = $paymentResponse['message'] ?? ($paymentResponse['error'] ?? $response->reason());
-                if (isset($paymentResponse['errors']) && is_array($paymentResponse['errors'])) {
-                    $errorMessage .= ' Detalhes: ' . implode(', ', array_map(fn($err) => $err['message'] ?? json_encode($err), $paymentResponse['errors']));
-                }
-                throw new \Exception('Falha ao gerar cobrança PIX: ' . $errorMessage);
-            }
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Erro ao processar pagamento Abacate Pay: ' . $e->getMessage());
-            throw $e;
         }
     }
 

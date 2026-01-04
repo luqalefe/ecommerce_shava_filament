@@ -10,12 +10,19 @@ class Endereco extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'rua', 'numero', 'complemento', 'cidade', 'estado', 'cep' // <-- CORRIGIDO AQUI
+        'user_id', 'rua', 'numero', 'complemento', 'bairro', 'cidade', 'estado', 'cep'
     ];
 
-    public function user() // <-- CORRIGIDO AQUI (para user)
+    public function user()
     {
-        // Como agora seguimos a convenção, não precisamos mais passar o segundo parâmetro
         return $this->belongsTo(User::class);
+    }
+
+    public function getFullAddressAttribute(): string
+    {
+        return "{$this->rua}, {$this->numero}" .
+               ($this->complemento ? " - {$this->complemento}" : "") .
+               ($this->bairro ? " - {$this->bairro}" : "") .
+               " - {$this->cidade}/{$this->estado} - CEP: {$this->cep}";
     }
 }
