@@ -84,7 +84,11 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Processa o pedido, cria a cobrança na AbacatePay e redireciona para o pagamento.
+     * @deprecated Este método usa a integração antiga com Abacate Pay.
+     * O checkout principal agora é processado via Livewire (CheckoutPage.php) 
+     * com integração Mercado Pago PIX.
+     * 
+     * Processa o pedido (fluxo legado).
      * Rota: POST /checkout
      * Nome: checkout.store
      */

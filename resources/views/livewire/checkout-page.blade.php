@@ -113,6 +113,103 @@
             </div>
         @enderror
 
+        {{-- PIX QR Code Modal --}}
+        @if($showPixQrCode)
+            <div class="pix-modal-overlay" x-data="{ copied: false, checkingStatus: false }" x-init="
+                // Polling para verificar status do pagamento a cada 5 segundos
+                setInterval(() => {
+                    if (!checkingStatus) {
+                        checkingStatus = true;
+                        $wire.checkPixPaymentStatus().finally(() => checkingStatus = false);
+                    }
+                }, 5000);
+            ">
+                <div class="pix-modal">
+                    <div class="pix-modal-header">
+                        <div class="pix-success-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <h2>Pedido Criado!</h2>
+                        <p>Escaneie o QR Code ou copie o código PIX</p>
+                    </div>
+
+                    <div class="pix-qr-container">
+                        @if($pixQrCodeBase64)
+                            <img src="data:image/png;base64,{{ $pixQrCodeBase64 }}" alt="QR Code PIX" class="pix-qr-image">
+                        @else
+                            <div class="pix-qr-placeholder">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M4 4h4v4H4V4zm12 0h4v4h-4V4zM4 16h4v4H4v-4zm12 4h4v-4h-4v4zM8 4h4v4H8V4zM4 8h4v4H4V8zm8-4h4v4h-4V4z"/>
+                                </svg>
+                                <p>QR Code</p>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="pix-code-container">
+                        <label>Código PIX (Copia e Cola)</label>
+                        <div class="pix-code-wrapper">
+                            <input type="text" readonly value="{{ $pixQrCode }}" id="pixCode" class="pix-code-input">
+                            <button type="button" 
+                                @click="
+                                    navigator.clipboard.writeText('{{ $pixQrCode }}').then(() => {
+                                        copied = true;
+                                        setTimeout(() => copied = false, 3000);
+                                    });
+                                "
+                                class="pix-copy-btn"
+                                :class="copied ? 'copied' : ''"
+                            >
+                                <span x-show="!copied">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                                    </svg>
+                                    Copiar
+                                </span>
+                                <span x-show="copied">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 6L9 17l-5-5"/>
+                                    </svg>
+                                    Copiado!
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="pix-info">
+                        <div class="pix-info-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            <span>O pagamento é processado em segundos</span>
+                        </div>
+                        <div class="pix-info-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                            <span>Transação 100% segura</span>
+                        </div>
+                    </div>
+
+                    <div class="pix-status" wire:poll.5s="checkPixPaymentStatus">
+                        <div class="pix-status-indicator">
+                            <div class="pulse-dot"></div>
+                            <span>Aguardando pagamento...</span>
+                        </div>
+                    </div>
+
+                    <div class="pix-footer">
+                        <p>Pedido #{{ $pixOrderId }}</p>
+                        <a href="{{ route('orders.index') }}" class="pix-orders-link">Ver Meus Pedidos</a>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <form wire:submit.prevent="placeOrder">
             <div class="checkout-layout">
                 
@@ -345,22 +442,34 @@
                         </div>
                         
                         <div class="payment-options">
-                            {{-- PIX --}}
-                            {{-- PIX (Removido - Agora via Mercado Pago) --}}
+                            {{-- PIX via Mercado Pago --}}
+                            <label class="payment-option {{ $paymentMethod === 'pix' ? 'selected' : '' }}">
+                                <input type="radio" wire:model.live="paymentMethod" value="pix">
+                                <div class="payment-icon pix-icon">
+                                    <svg viewBox="0 0 512 512" fill="currentColor">
+                                        <path d="M242.4 292.5c-2.3-2.3-6.1-2.3-8.5 0l-56.5 56.5c-15.7 15.7-41 15.7-56.6 0-15.6-15.6-15.6-41 0-56.6l56.5-56.5c2.3-2.3 2.3-6.1 0-8.5l-14.1-14.1c-2.3-2.3-6.1-2.3-8.5 0l-56.5 56.5c-28.1 28.1-28.1 73.6 0 101.7 28.1 28.1 73.6 28.1 101.7 0l56.5-56.5c2.3-2.3 2.3-6.1 0-8.5l-14-14zm-56.8-56.9l14.1-14.1c2.3-2.3 2.3-6.1 0-8.5l-56.5-56.5c-28.1-28.1-28.1-73.6 0-101.7 28.1-28.1 73.6-28.1 101.7 0l56.5 56.5c2.3 2.3 6.1 2.3 8.5 0l14.1-14.1c2.3-2.3 2.3-6.1 0-8.5l-56.5-56.5c-40.6-40.6-106.5-40.6-147.1 0-40.6 40.6-40.6 106.5 0 147.1l56.5 56.5c2.4 2.4 6.2 2.4 8.5 0zm198.3-84.4l-56.5 56.5c-2.3 2.3-2.3 6.1 0 8.5l14.1 14.1c2.3 2.3 6.1 2.3 8.5 0l56.5-56.5c15.7-15.7 41-15.7 56.6 0 15.6 15.6 15.6 41 0 56.6l-56.5 56.5c-2.3 2.3-2.3 6.1 0 8.5l14.1 14.1c2.3 2.3 6.1 2.3 8.5 0l56.5-56.5c28.1-28.1 28.1-73.6 0-101.7-28.1-28.1-73.7-28.1-101.8 0zm56.9 56.9l-14.1 14.1c-2.3 2.3-2.3 6.1 0 8.5l56.5 56.5c28.1 28.1 28.1 73.6 0 101.7-28.1 28.1-73.6 28.1-101.7 0l-56.5-56.5c-2.3-2.3-6.1-2.3-8.5 0l-14.1 14.1c-2.3 2.3-2.3 6.1 0 8.5l56.5 56.5c40.6 40.6 106.5 40.6 147.1 0 40.6-40.6 40.6-106.5 0-147.1l-56.5-56.5c-2.4-2.4-6.2-2.4-8.5 0z"/>
+                                    </svg>
+                                </div>
+                                <div class="payment-info">
+                                    <span class="payment-name">PIX</span>
+                                    <span class="payment-badge pix-badge">Instantâneo</span>
+                                    <span class="payment-desc">Pague instantaneamente com QR Code</span>
+                                </div>
+                            </label>
 
-                            {{-- Mercado Pago --}}
-                            <label class="payment-option {{ $paymentMethod === 'mercadopago' ? 'selected' : '' }}">
-                                <input type="radio" wire:model="paymentMethod" value="mercadopago">
-                                <div class="payment-icon mp">
+                            {{-- Cartão de Crédito via Mercado Pago Checkout Pro --}}
+                            <label class="payment-option {{ $paymentMethod === 'card' ? 'selected' : '' }}">
+                                <input type="radio" wire:model.live="paymentMethod" value="card">
+                                <div class="payment-icon card-icon">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <rect x="1" y="4" width="22" height="16" rx="2"/>
+                                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
                                         <line x1="1" y1="10" x2="23" y2="10"/>
                                     </svg>
                                 </div>
                                 <div class="payment-info">
-                                    <span class="payment-name">Mercado Pago</span>
-                                    <span class="payment-badge card">Cartão/Pix</span>
-                                    <span class="payment-desc">Pague com cartão de crédito ou Pix</span>
+                                    <span class="payment-name">Cartão de Crédito</span>
+                                    <span class="payment-badge card-badge">Parcelado</span>
+                                    <span class="payment-desc">Pague em até 12x via Mercado Pago</span>
                                 </div>
                             </label>
                         </div>
@@ -810,14 +919,20 @@
     .payment-icon svg { width: 24px; height: 24px; }
     .payment-icon.pix { background: #ECFDF5; }
     .payment-icon.pix svg { color: #059669; }
+    .payment-icon.pix-icon { background: #ECFDF5; }
+    .payment-icon.pix-icon svg { color: #059669; }
     .payment-icon.mp { background: #EFF6FF; }
     .payment-icon.mp svg { color: #2563EB; }
+    .payment-icon.card-icon { background: #EFF6FF; }
+    .payment-icon.card-icon svg { color: #2563EB; }
 
     .payment-info { flex: 1; }
     .payment-name { font-weight: 600; color: #1C1917; margin-right: 0.5rem; }
     .payment-badge { font-size: 0.7rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
     .payment-badge.instant { background: #ECFDF5; color: #059669; }
+    .payment-badge.pix-badge { background: #ECFDF5; color: #059669; }
     .payment-badge.card { background: #EFF6FF; color: #2563EB; }
+    .payment-badge.card-badge { background: #EFF6FF; color: #2563EB; }
     .payment-desc { display: block; font-size: 0.85rem; color: #78716C; margin-top: 0.25rem; }
 
     .payment-security {
@@ -1006,5 +1121,260 @@
 
     .checkout-forms { order: 2; }
     @media (min-width: 1024px) { .checkout-forms { order: 1; } }
+
+    /* ============================================
+       PIX QR CODE MODAL
+       ============================================ */
+    .pix-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(4px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        padding: 1rem;
+    }
+
+    .pix-modal {
+        background: white;
+        border-radius: 20px;
+        max-width: 420px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        animation: modalSlideIn 0.3s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95) translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .pix-modal-header {
+        text-align: center;
+        padding: 2rem 2rem 1rem;
+    }
+
+    .pix-success-icon {
+        width: 60px;
+        height: 60px;
+        background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+    }
+
+    .pix-success-icon svg {
+        width: 32px;
+        height: 32px;
+        color: white;
+    }
+
+    .pix-modal-header h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1C1917;
+        margin: 0 0 0.5rem;
+    }
+
+    .pix-modal-header p {
+        font-size: 0.95rem;
+        color: #78716C;
+        margin: 0;
+    }
+
+    .pix-qr-container {
+        display: flex;
+        justify-content: center;
+        padding: 1rem 2rem;
+    }
+
+    .pix-qr-image {
+        width: 200px;
+        height: 200px;
+        border-radius: 12px;
+        border: 2px solid #E7E5E4;
+        padding: 8px;
+        background: white;
+    }
+
+    .pix-qr-placeholder {
+        width: 200px;
+        height: 200px;
+        border-radius: 12px;
+        border: 2px dashed #E7E5E4;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #A8A29E;
+    }
+
+    .pix-qr-placeholder svg {
+        width: 48px;
+        height: 48px;
+    }
+
+    .pix-code-container {
+        padding: 0 2rem 1.5rem;
+    }
+
+    .pix-code-container label {
+        display: block;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #44403C;
+        margin-bottom: 0.5rem;
+    }
+
+    .pix-code-wrapper {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .pix-code-input {
+        flex: 1;
+        height: 48px;
+        padding: 0 1rem;
+        border: 2px solid #E7E5E4;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        color: #44403C;
+        background: #F5F5F4;
+        font-family: monospace;
+        text-overflow: ellipsis;
+    }
+
+    .pix-copy-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        height: 48px;
+        padding: 0 1.25rem;
+        background: var(--sh-muted-gold, #A69067);
+        color: white;
+        font-weight: 600;
+        font-size: 0.9rem;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+    }
+
+    .pix-copy-btn:hover {
+        background: #8B7A5A;
+    }
+
+    .pix-copy-btn.copied {
+        background: #059669;
+    }
+
+    .pix-copy-btn svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    .pix-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        padding: 1rem 2rem;
+        background: #F5F5F4;
+        border-top: 1px solid #E7E5E4;
+        border-bottom: 1px solid #E7E5E4;
+    }
+
+    .pix-info-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        font-size: 0.9rem;
+        color: #57534E;
+    }
+
+    .pix-info-item svg {
+        width: 20px;
+        height: 20px;
+        color: #059669;
+        flex-shrink: 0;
+    }
+
+    .pix-status {
+        padding: 1.5rem 2rem;
+        text-align: center;
+    }
+
+    .pix-status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1.5rem;
+        background: #FEF3C7;
+        border-radius: 30px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #92400E;
+    }
+
+    .pulse-dot {
+        width: 10px;
+        height: 10px;
+        background: #F59E0B;
+        border-radius: 50%;
+        animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.3);
+            opacity: 0.7;
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .pix-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 2rem 1.5rem;
+    }
+
+    .pix-footer p {
+        font-size: 0.85rem;
+        color: #78716C;
+        margin: 0;
+    }
+
+    .pix-orders-link {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: var(--sh-muted-gold, #A69067);
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    .pix-orders-link:hover {
+        color: #8B7A5A;
+        text-decoration: underline;
+    }
     </style>
 </div>

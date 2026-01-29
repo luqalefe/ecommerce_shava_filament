@@ -19,3 +19,6 @@ yarn-error.log
 
 # Docker
 docker-compose.override.yml
+
+# Scripts de debug/desenvolvimento
+/scripts/

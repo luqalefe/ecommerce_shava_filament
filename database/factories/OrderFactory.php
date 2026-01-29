@@ -41,5 +41,26 @@ class OrderFactory extends Factory
             'status' => 'processing',
         ]);
     }
+
+    /**
+     * Pedido com status pago/processando
+     */
+    public function paid(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'processing',
+            'payment_id' => 'MP-' . fake()->uuid(),
+        ]);
+    }
+
+    /**
+     * Pedido cancelado
+     */
+    public function cancelled(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'status' => 'cancelled',
+        ]);
+    }
 }
 

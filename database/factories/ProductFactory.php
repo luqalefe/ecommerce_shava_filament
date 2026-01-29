@@ -36,5 +36,18 @@ class ProductFactory extends Factory
             'is_active' => false,
         ]);
     }
+
+    /**
+     * Produto com dimensões definidas para cálculo de frete
+     */
+    public function withDimensions(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'weight' => 0.5,
+            'height' => 10,
+            'width' => 20,
+            'length' => 30,
+        ]);
+    }
 }
 

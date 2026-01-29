@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\URL;
 use App\Models\Category;
 use App\Models\Order;
 use App\Observers\OrderObserver;
-use AbacatePay\Clients\Client; // <<< ADICIONE ESTE IMPORT
+
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -46,13 +46,6 @@ class AppServiceProvider extends ServiceProvider
         }
 
 
-        // --- INÍCIO DA CONFIGURAÇÃO ABACATE PAY ---
-        // Configura a chave da API para todo o aplicativo
-        // Nós lemos de config/services.php por performance (cache de config)
-        if (config('services.abacatepay.key')) {
-            Client::setToken(config('services.abacatepay.key'));
-        }
-        // --- FIM DA CONFIGURAÇÃO ABACATE PAY ---
 
         // Registrar Observer para notificações de mudança de status
         // O Observer agora está seguro: não bloqueia o save mesmo se houver erro de email

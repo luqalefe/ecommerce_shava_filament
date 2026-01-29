@@ -20,6 +20,7 @@ class EnderecoFactory extends Factory
             'rua' => fake()->streetName(),
             'numero' => fake()->buildingNumber(),
             'complemento' => fake()->optional()->secondaryAddress(),
+            'bairro' => fake()->citySuffix() . ' ' . fake()->lastName(),
             'cidade' => fake()->city(),
             'estado' => fake()->stateAbbr(),
             'cep' => fake()->numerify('########'),

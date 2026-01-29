@@ -296,5 +296,155 @@ class MercadoPagoService
             return null;
         }
     }
+
+    /**
+     * Cria um pagamento PIX e retorna o QR Code para exibição
+     * 
+     * @param float $amount Valor total do pagamento em BRL
+     * @param array $payerData Dados do pagador (name, email, cpf, phone)
+     * @param int $orderId ID do pedido (usado como external_reference)
+     * @param string $description Descrição do pagamento
+     * @return array ['qr_code' => string, 'qr_code_base64' => string, 'payment_id' => int, 'status' => string]
+     * @throws \Exception
+     */
+    public function createPixPayment(float $amount, array $payerData, int $orderId, string $description = 'Pedido'): array
+    {
+        try {
+            // Validar valor mínimo
+            if ($amount < 0.01) {
+                throw new \Exception('Valor do pagamento deve ser maior que R$ 0,01');
+            }
+
+            // Preparar dados do pagador
+            $payer = [
+                'email' => $payerData['email'],
+            ];
+
+            // Adicionar nome se disponível
+            if (!empty($payerData['name'])) {
+                $nameParts = explode(' ', trim($payerData['name']), 2);
+                $payer['first_name'] = $nameParts[0] ?? '';
+                $payer['last_name'] = $nameParts[1] ?? '';
+            }
+
+            // Adicionar CPF se disponível
+            if (!empty($payerData['cpf'])) {
+                $cpf = preg_replace('/\D/', '', $payerData['cpf']);
+                if (strlen($cpf) === 11) {
+                    $payer['identification'] = [
+                        'type' => 'CPF',
+                        'number' => $cpf
+                    ];
+                }
+            }
+
+            // Montar payload do pagamento PIX
+            $paymentData = [
+                'transaction_amount' => round($amount, 2),
+                'description' => mb_substr($description . ' #' . $orderId, 0, 256),
+                'payment_method_id' => 'pix',
+                'payer' => $payer,
+                'external_reference' => (string) $orderId,
+            ];
+
+            Log::info('Criando pagamento PIX no Mercado Pago', [
+                'order_id' => $orderId,
+                'amount' => $amount,
+                'payer_email' => $payerData['email'] ?? 'N/A',
+            ]);
+
+            // Criar o pagamento usando PaymentClient
+            $paymentClient = new PaymentClient();
+            $payment = $paymentClient->create($paymentData);
+
+            if (!$payment || !$payment->id) {
+                Log::error('Falha ao criar pagamento PIX - resposta vazia', [
+                    'payment_data' => $paymentData,
+                    'response' => json_encode($payment),
+                ]);
+                throw new \Exception('Falha ao criar pagamento PIX. Tente novamente.');
+            }
+
+            // Extrair dados do QR Code da resposta
+            $pointOfInteraction = $payment->point_of_interaction ?? null;
+            $transactionData = $pointOfInteraction->transaction_data ?? null;
+
+            if (!$transactionData) {
+                Log::error('QR Code não retornado pelo Mercado Pago', [
+                    'payment_id' => $payment->id,
+                    'payment' => json_encode($payment),
+                ]);
+                throw new \Exception('QR Code PIX não foi gerado. Verifique a configuração do Mercado Pago.');
+            }
+
+            $qrCode = $transactionData->qr_code ?? '';
+            $qrCodeBase64 = $transactionData->qr_code_base64 ?? '';
+            $ticketUrl = $transactionData->ticket_url ?? '';
+
+            if (empty($qrCode) && empty($qrCodeBase64)) {
+                Log::error('Dados do QR Code vazios', [
+                    'payment_id' => $payment->id,
+                    'transaction_data' => json_encode($transactionData),
+                ]);
+                throw new \Exception('Dados do QR Code PIX não foram retornados.');
+            }
+
+            Log::info('Pagamento PIX criado com sucesso', [
+                'payment_id' => $payment->id,
+                'status' => $payment->status,
+                'order_id' => $orderId,
+                'has_qr_code' => !empty($qrCode),
+                'has_qr_code_base64' => !empty($qrCodeBase64),
+            ]);
+
+            return [
+                'payment_id' => $payment->id,
+                'status' => $payment->status,
+                'status_detail' => $payment->status_detail ?? null,
+                'qr_code' => $qrCode,              // Código copia e cola
+                'qr_code_base64' => $qrCodeBase64, // Imagem Base64 do QR Code
+                'ticket_url' => $ticketUrl,        // URL alternativa para pagamento
+                'expiration_date' => $payment->date_of_expiration ?? null,
+            ];
+
+        } catch (MPApiException $e) {
+            $apiResponse = $e->getApiResponse();
+            $errorContent = $apiResponse ? $apiResponse->getContent() : [];
+
+            // Extrair mensagens de erro detalhadas
+            $errorMessages = [];
+            if (isset($errorContent['message'])) {
+                $errorMessages[] = $errorContent['message'];
+            }
+            if (isset($errorContent['cause']) && is_array($errorContent['cause'])) {
+                foreach ($errorContent['cause'] as $cause) {
+                    if (isset($cause['description'])) {
+                        $errorMessages[] = $cause['description'];
+                    }
+                }
+            }
+
+            $detailedError = !empty($errorMessages)
+                ? implode(' | ', $errorMessages)
+                : $e->getMessage();
+
+            Log::error('Erro da API Mercado Pago ao criar PIX', [
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+                'status' => $e->getStatusCode(),
+                'content' => $errorContent,
+                'detailed_error' => $detailedError,
+            ]);
+
+            throw new \Exception('Erro ao gerar PIX: ' . $detailedError);
+        } catch (\Exception $e) {
+            Log::error('Erro ao criar pagamento PIX', [
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw new \Exception('Erro ao gerar pagamento PIX: ' . $e->getMessage());
+        }
+    }
 }
 

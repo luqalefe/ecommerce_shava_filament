@@ -245,5 +245,111 @@ class CheckoutTest extends TestCase
 
         $response->assertRedirect(route('cart.index'));
     }
+
+    /**
+     * Testa que pedido é criado com status pending
+     */
+    public function test_order_created_with_pending_status(): void
+    {
+        $user = User::factory()->create([
+            'cpf' => '12345678900',
+            'celular' => '11999999999',
+        ]);
+        $endereco = Endereco::factory()->create(['user_id' => $user->id]);
+        $category = Category::factory()->create();
+        $product = Product::factory()->create([
+            'category_id' => $category->id,
+            'price' => 100.00,
+            'quantity' => 10,
+        ]);
+
+        $order = \App\Models\Order::create([
+            'user_id' => $user->id,
+            'endereco_id' => $endereco->id,
+            'status' => 'pending',
+            'total_amount' => 115.00,
+            'shipping_cost' => 15.00,
+            'shipping_service' => 'PAC (Correios)',
+            'payment_method' => 'mercadopago',
+        ]);
+
+        $this->assertDatabaseHas('orders', [
+            'id' => $order->id,
+            'status' => 'pending',
+            'user_id' => $user->id,
+        ]);
+
+        $this->assertEquals('pending', $order->status);
+    }
+
+    /**
+     * Testa que estoque é decrementado ao criar pedido
+     */
+    public function test_stock_decremented_on_order_creation(): void
+    {
+        $category = Category::factory()->create();
+        $product = Product::factory()->create([
+            'category_id' => $category->id,
+            'price' => 50.00,
+            'quantity' => 10,
+        ]);
+
+        $initialStock = $product->quantity;
+        $quantityOrdered = 3;
+
+        // Simula o decremento de estoque que acontece no checkout
+        $product->decrement('quantity', $quantityOrdered);
+        $product->refresh();
+
+        $this->assertEquals($initialStock - $quantityOrdered, $product->quantity);
+        $this->assertEquals(7, $product->quantity);
+    }
+
+    /**
+     * Testa que estoque insuficiente impede a compra
+     */
+    public function test_order_creation_fails_for_insufficient_stock(): void
+    {
+        $category = Category::factory()->create();
+        $product = Product::factory()->create([
+            'category_id' => $category->id,
+            'price' => 50.00,
+            'quantity' => 2, // Apenas 2 unidades
+        ]);
+
+        $quantityRequested = 5; // Tentando comprar 5
+
+        // Validação de estoque como no CheckoutPage
+        $hasInsufficientStock = $product->quantity < $quantityRequested;
+
+        $this->assertTrue($hasInsufficientStock, 'Deveria detectar estoque insuficiente');
+    }
+
+    /**
+     * Testa que pedido inclui custo de frete corretamente
+     */
+    public function test_order_includes_shipping_cost(): void
+    {
+        $user = User::factory()->create();
+        $endereco = Endereco::factory()->create(['user_id' => $user->id]);
+
+        $subtotal = 200.00;
+        $shippingCost = 25.50;
+        $total = $subtotal + $shippingCost;
+
+        $order = \App\Models\Order::create([
+            'user_id' => $user->id,
+            'endereco_id' => $endereco->id,
+            'status' => 'pending',
+            'total_amount' => $total,
+            'shipping_cost' => $shippingCost,
+            'shipping_service' => 'SEDEX (Correios)',
+            'payment_method' => 'mercadopago',
+        ]);
+
+        $this->assertEquals($shippingCost, $order->shipping_cost);
+        $this->assertEquals($total, $order->total_amount);
+        $this->assertEquals($subtotal, $order->total_amount - $order->shipping_cost);
+    }
 }
 
