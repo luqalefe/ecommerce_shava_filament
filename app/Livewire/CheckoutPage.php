@@ -32,13 +32,20 @@ class CheckoutPage extends Component
     public $shippingCost = 0;
     public $shippingService = '';
     
-    public $paymentMethod = 'mercadopago';
+    public $paymentMethod = 'pix'; // 'pix' ou 'card' (Checkout Pro)
     
     // Campos de perfil (CPF e Celular)
     public $cpf = '';
     public $celular = '';
     public $needsCpf = false;
     public $needsCelular = false;
+    
+    // PIX QR Code display
+    public $showPixQrCode = false;
+    public $pixQrCode = '';        // Código copia e cola
+    public $pixQrCodeBase64 = '';  // Imagem Base64 do QR Code
+    public $pixPaymentId = '';
+    public $pixOrderId = null;
     
     public $loading = false;
     public $loadingCep = false; // Loading específico para busca de CEP
@@ -205,7 +212,7 @@ class CheckoutPage extends Component
             return;
         }
 
-        // Verificar se é Rio Branco - AC (frete grátis)
+        // Verificar se é Rio Branco - AC (frete especial)
         $cidadeNormalizada = mb_strtolower(trim($this->cidade ?? ''));
         $estadoNormalizado = mb_strtoupper(trim($this->estado ?? ''));
         
@@ -214,19 +221,23 @@ class CheckoutPage extends Component
         $isAcre = $estadoNormalizado === 'AC';
         
         if ($isRioBranco && $isAcre) {
-            // Frete grátis para Rio Branco - AC
+            // Rio Branco - AC: Frete grátis acima de R$100, senão R$10
+            $freteGratis = $valorTotal >= 100;
+            $precoFrete = $freteGratis ? 0 : 10;
+            $labelFrete = $freteGratis ? 'GRÁTIS' : 'R$ 10,00';
+            
             $this->shippingOptions = [
                 [
                     'service' => 'Entrega Local',
                     'carrier' => 'Shava Haux',
-                    'price' => 0,
+                    'price' => $precoFrete,
                     'deadline' => 1,
                 ]
             ];
-            // Selecionar automaticamente o frete grátis
+            // Selecionar automaticamente
             $this->selectedShipping = 0;
-            $this->shippingCost = 0;
-            $this->shippingService = 'Entrega Local (Shava Haux) - GRÁTIS';
+            $this->shippingCost = $precoFrete;
+            $this->shippingService = "Entrega Local (Shava Haux) - {$labelFrete}";
             $this->loading = false;
             return;
         }
@@ -338,7 +349,6 @@ class CheckoutPage extends Component
             }],
             'shippingService' => 'required|string',
             'shippingCost' => 'required|numeric|min:0',
-            'paymentMethod' => 'required|string|in:mercadopago',
             'cpf' => $cpfRule,
             'celular' => $celularRule,
         ], [
@@ -379,6 +389,18 @@ class CheckoutPage extends Component
         if ($cartItems->isEmpty()) {
             session()->flash('error', 'Seu carrinho está vazio.');
             return redirect()->route('cart.index');
+        }
+
+        // ========================================================
+        // VALIDAÇÃO: Produtos da categoria CNPJ só podem ser comprados por PJ
+        // ========================================================
+        foreach ($cartItems as $item) {
+            $product = Product::with('category')->find($item->id);
+            
+            if ($product && $product->isCnpjOnly() && !$user->isPessoaJuridica()) {
+                $this->addError('payment', "O produto '{$product->name}' é exclusivo para clientes Pessoa Jurídica (CNPJ). Por favor, atualize seu cadastro ou remova este produto do carrinho.");
+                return;
+            }
         }
 
         // ========================================================
@@ -465,10 +487,11 @@ class CheckoutPage extends Component
             $order->update(['total_amount' => $validatedTotal]);
 
             // Processar pagamento baseado no método selecionado
-            if ($this->paymentMethod === 'mercadopago') {
-                return $this->processMercadoPagoPayment($order, $cartItemsArray, $shippingCost, $user, $endereco);
+            if ($this->paymentMethod === 'pix') {
+                return $this->processPixPayment($order, $cartItemsArray, $shippingCost, $user, $endereco);
             } else {
-                return $this->processAbacatePayPayment($order, $cartItems, $shippingCost, $user);
+                // Cartão de Crédito via Checkout Pro (redireciona para Mercado Pago)
+                return $this->processMercadoPagoCheckoutPro($order, $cartItemsArray, $shippingCost, $user, $endereco);
             }
         } catch (\Exception $e) {
             DB::rollBack();
@@ -486,9 +509,115 @@ class CheckoutPage extends Component
     }
 
     /**
-     * Processa pagamento via Mercado Pago
+     * Processa pagamento PIX via Mercado Pago (QR Code direto)
      */
-    private function processMercadoPagoPayment($order, array $cartItemsArray, float $shippingCost, $user, $endereco)
+    private function processPixPayment($order, array $cartItemsArray, float $shippingCost, $user, $endereco)
+    {
+        try {
+            $mercadopagoService = app(MercadoPagoService::class);
+
+            // Preparar dados do pagador
+            $payerData = [
+                'name' => $user->name,
+                'email' => $user->email,
+                'cpf' => $user->cpf ?? null,
+                'phone' => $user->celular ?? null,
+            ];
+
+            // Calcular valor total
+            $totalAmount = $order->total_amount;
+
+            Log::info('Criando pagamento PIX', [
+                'order_id' => $order->id,
+                'total_amount' => $totalAmount,
+            ]);
+
+            // Criar pagamento PIX no Mercado Pago
+            $pixPayment = $mercadopagoService->createPixPayment(
+                $totalAmount,
+                $payerData,
+                $order->id,
+                'Pedido Shava Haux'
+            );
+
+            if (empty($pixPayment['qr_code']) && empty($pixPayment['qr_code_base64'])) {
+                throw new \Exception('QR Code PIX não foi gerado. Tente novamente.');
+            }
+
+            // Salvar o ID do pagamento no pedido
+            $order->update([
+                'payment_id' => $pixPayment['payment_id'],
+                'payment_method' => 'pix',
+            ]);
+
+            DB::commit();
+            Cart::clear();
+
+            // Setar propriedades para exibir QR Code na interface
+            $this->showPixQrCode = true;
+            $this->pixQrCode = $pixPayment['qr_code'];
+            $this->pixQrCodeBase64 = $pixPayment['qr_code_base64'];
+            $this->pixPaymentId = $pixPayment['payment_id'];
+            $this->pixOrderId = $order->id;
+
+            Log::info('QR Code PIX gerado com sucesso', [
+                'payment_id' => $pixPayment['payment_id'],
+                'order_id' => $order->id,
+            ]);
+
+            // Disparar evento para UI (opcional)
+            $this->dispatch('pix-qr-code-ready');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Erro ao processar pagamento PIX', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'order_id' => $order->id ?? null,
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Copia o código PIX para a área de transferência (chamado via JS)
+     */
+    public function copyPixCode()
+    {
+        // Este método é chamado apenas para logging, a cópia real é feita via JS
+        Log::info('Código PIX copiado', ['order_id' => $this->pixOrderId]);
+    }
+
+    /**
+     * Verifica o status do pagamento PIX
+     */
+    public function checkPixPaymentStatus()
+    {
+        if (!$this->pixPaymentId) {
+            return;
+        }
+
+        try {
+            $mercadopagoService = app(MercadoPagoService::class);
+            $payment = $mercadopagoService->getPayment($this->pixPaymentId);
+
+            if ($payment && $payment['status'] === 'approved') {
+                // Pagamento aprovado - redirecionar para página de sucesso
+                return redirect()->route('checkout.success')->with('message', 'Pagamento confirmado com sucesso!');
+            }
+        } catch (\Exception $e) {
+            Log::error('Erro ao verificar status do PIX', [
+                'payment_id' => $this->pixPaymentId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Processa pagamento via Mercado Pago Checkout Pro (Cartão de Crédito)
+     * Redireciona para a página do Mercado Pago
+     */
+    private function processMercadoPagoCheckoutPro($order, array $cartItemsArray, float $shippingCost, $user, $endereco)
     {
         try {
             $mercadopagoService = app(MercadoPagoService::class);
@@ -506,7 +635,7 @@ class CheckoutPage extends Component
                 ],
             ];
 
-            Log::info('Criando preferência Mercado Pago', [
+            Log::info('Criando preferência Mercado Pago (Checkout Pro)', [
                 'order_id' => $order->id,
                 'items_count' => count($cartItemsArray),
                 'shipping_cost' => $shippingCost,
@@ -527,6 +656,7 @@ class CheckoutPage extends Component
             // Salvar o ID da preferência no pedido
             $order->update([
                 'payment_id' => $preference['preference_id'],
+                'payment_method' => 'card',
             ]);
 
             DB::commit();
@@ -547,7 +677,7 @@ class CheckoutPage extends Component
                 'trace' => $e->getTraceAsString(),
                 'order_id' => $order->id ?? null,
             ]);
-            throw $e; // Re-throw para ser capturado no método principal
+            throw $e;
         }
     }
 
@@ -569,16 +699,15 @@ class CheckoutPage extends Component
         // Isso previne que o usuário manipule o array shippingOptions via JS
         // Recalculamos as opções de frete com os dados atuais do servidor
         
-        // Verificar se é Rio Branco - AC (frete grátis) - Lógica deve ser IDÊNTICA ao calculateShipping
+        // Verificar se é Rio Branco - AC (frete especial) - Lógica deve ser IDÊNTICA ao calculateShipping
         $cidadeNormalizada = mb_strtolower(trim($this->cidade ?? ''));
         $estadoNormalizado = mb_strtoupper(trim($this->estado ?? ''));
         $isRioBranco = in_array($cidadeNormalizada, ['rio branco', 'riobranco']);
         $isAcre = $estadoNormalizado === 'AC';
         
         if ($isRioBranco && $isAcre) {
-            // Se for Rio Branco, o frete DEVE ser 0
-            // Assumindo que é a única opção conforme calculateShipping:
-            return 0.0;
+            // Rio Branco - AC: Frete grátis acima de R$100, senão R$10
+            return $cartSubTotal >= 100 ? 0.0 : 10.0;
         }
 
         // Se não for Rio Branco, recotamos na Frenet para garantir que o valor está correto

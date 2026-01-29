@@ -95,6 +95,28 @@ class OrderResource extends Resource
                 Forms\Components\TextInput::make('payment_id')
                     ->label('ID do Pagamento')
                     ->maxLength(255),
+                
+                // Seção de Rastreamento (para entregas fora do Acre)
+                Forms\Components\Section::make('Rastreamento de Envio')
+                    ->description('Preencha apenas para entregas fora do estado do Acre')
+                    ->schema([
+                        Forms\Components\TextInput::make('carrier_name')
+                            ->label('Transportadora')
+                            ->placeholder('Ex: Correios, JadLog, Azul Cargo')
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('tracking_code')
+                            ->label('Código de Rastreio')
+                            ->placeholder('Ex: BR123456789BR')
+                            ->maxLength(255),
+                        Forms\Components\TextInput::make('tracking_url')
+                            ->label('Link de Rastreamento')
+                            ->placeholder('Ex: https://www.correios.com.br/rastreamento')
+                            ->url()
+                            ->maxLength(500),
+                    ])
+                    ->columns(3)
+                    ->collapsible()
+                    ->collapsed(fn ($record) => empty($record?->tracking_code)),
             ];
         }
 
@@ -104,6 +126,7 @@ class OrderResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->columns([
                 Tables\Columns\TextColumn::make('id')
                     ->label('ID')
@@ -139,6 +162,12 @@ class OrderResource extends Resource
                     ->label('Pagamento')
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => strtoupper($state)),
+                Tables\Columns\TextColumn::make('tracking_code')
+                    ->label('Rastreio')
+                    ->placeholder('—')
+                    ->copyable()
+                    ->copyMessage('Código copiado!')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Criado em')
                     ->dateTime('d/m/Y H:i')
@@ -207,10 +236,33 @@ class OrderResource extends Resource
                             ]);
                             
                             try {
+                                $oldStatus = $record->status;
                                 $record->update(['status' => 'shipped']);
+                                
+                                // Enviar notificação por email com info de rastreamento
+                                if ($record->user) {
+                                    try {
+                                        $record->user->notify(new \App\Notifications\OrderStatusChangedNotification(
+                                            $record->fresh(), 
+                                            $oldStatus, 
+                                            'shipped'
+                                        ));
+                                        \Illuminate\Support\Facades\Log::info('Email de envio enviado ao cliente', [
+                                            'order_id' => $record->id,
+                                            'user_email' => $record->user->email,
+                                            'tracking_code' => $record->tracking_code,
+                                        ]);
+                                    } catch (\Exception $mailException) {
+                                        \Illuminate\Support\Facades\Log::warning('Falha ao enviar email de envio', [
+                                            'order_id' => $record->id,
+                                            'error' => $mailException->getMessage(),
+                                        ]);
+                                    }
+                                }
                                 
                                 \Filament\Notifications\Notification::make()
                                     ->title('Status atualizado para Enviado')
+                                    ->body('Email de rastreamento enviado ao cliente.')
                                     ->success()
                                     ->send();
                                     

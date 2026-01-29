@@ -112,6 +112,47 @@
                         Status Atual: {{ $this->getStatusLabel() }}
                     </span>
                 </div>
+
+                {{-- Seção de Rastreamento (se disponível) --}}
+                @if($order->tracking_code)
+                    <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="flex items-center gap-2 mb-3">
+                            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                            </svg>
+                            <h3 class="font-bold text-blue-900">Informações de Rastreamento</h3>
+                        </div>
+                        
+                        @if($order->carrier_name)
+                            <p class="text-sm text-blue-800 mb-2">
+                                <span class="font-semibold">Transportadora:</span> {{ $order->carrier_name }}
+                            </p>
+                        @endif
+                        
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-sm text-blue-800 font-semibold">Código:</span>
+                            <code class="px-3 py-1 bg-white border border-blue-300 rounded font-mono text-blue-900 select-all">{{ $order->tracking_code }}</code>
+                            <button 
+                                onclick="navigator.clipboard.writeText('{{ $order->tracking_code }}').then(() => { this.innerHTML = '✓ Copiado!'; setTimeout(() => this.innerHTML = 'Copiar', 2000); })"
+                                class="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition"
+                            >
+                                Copiar
+                            </button>
+                        </div>
+                        
+                        @if($order->tracking_url)
+                            <a href="{{ $order->tracking_url }}" 
+                               target="_blank" 
+                               rel="noopener noreferrer"
+                               class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-semibold">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                                Rastrear Pedido
+                            </a>
+                        @endif
+                    </div>
+                @endif
             @endif
         </div>
 

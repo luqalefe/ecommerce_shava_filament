@@ -76,15 +76,43 @@ class OrderStatusChangedNotification extends Notification
         // Mensagens específicas por status
         match($this->newStatus) {
             'processing' => $message->line('Seu pedido está sendo processado e preparado para envio.'),
-            'shipped' => $message->line('Seu pedido foi enviado! Em breve você receberá mais informações sobre a entrega.'),
+            'shipped' => $this->addShippingInfo($message),
             'delivered' => $message->line('Seu pedido foi entregue! Esperamos que tenha gostado da sua compra.'),
             'cancelled' => $message->line('Seu pedido foi cancelado. Se você tiver dúvidas, entre em contato conosco.'),
             default => null,
         };
 
-        $message->action('Ver Detalhes do Pedido', route('order.show', $this->order))
-            ->line('Obrigado por comprar na Shava Haux!');
+        // Se tiver URL de rastreamento, usar como botão principal
+        if ($this->newStatus === 'shipped' && $this->order->tracking_url) {
+            $message->action('Rastrear Pedido', $this->order->tracking_url);
+        } else {
+            $message->action('Ver Detalhes do Pedido', route('order.show', $this->order));
+        }
+        
+        $message->line('Obrigado por comprar na Shava Haux!');
 
+        return $message;
+    }
+
+    /**
+     * Adiciona informações de envio no email
+     */
+    private function addShippingInfo(MailMessage $message): MailMessage
+    {
+        $message->line('🚚 Seu pedido foi enviado!');
+        
+        if ($this->order->carrier_name) {
+            $message->line('**Transportadora:** ' . $this->order->carrier_name);
+        }
+        
+        if ($this->order->tracking_code) {
+            $message->line('**Código de Rastreio:** ' . $this->order->tracking_code);
+        }
+        
+        if (!$this->order->tracking_code) {
+            $message->line('Em breve você receberá mais informações sobre a entrega.');
+        }
+        
         return $message;
     }
 

@@ -82,4 +82,13 @@ class Product extends Model
     {
         return $this->belongsToMany(AttributeValue::class, 'product_attribute_value');
     }
+
+    /**
+     * Verifica se o produto pertence à categoria exclusiva para CNPJ (Pessoa Jurídica)
+     * Produtos desta categoria só podem ser comprados por clientes PJ
+     */
+    public function isCnpjOnly(): bool
+    {
+        return $this->category && $this->category->slug === 'cnpj';
+    }
 }
