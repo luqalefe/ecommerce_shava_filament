@@ -32,7 +32,8 @@ class CheckoutPage extends Component
     public $shippingCost = 0;
     public $shippingService = '';
     
-    public $paymentMethod = 'pix'; // 'pix' ou 'card' (Checkout Pro)
+    public $paymentMethod = 'pix'; // 'pix', 'card' ou 'delivery' (Pagamento na Entrega)
+    public $canPayOnDelivery = false; // Elegível para pagamento na entrega (PJ + Rio Branco)
     
     // Campos de perfil (CPF e Celular)
     public $cpf = '';
@@ -168,6 +169,9 @@ class CheckoutPage extends Component
 
             // Calcula o frete automaticamente após preencher o endereço
             $this->calculateShipping($cep);
+
+            // Verifica se é elegível para pagamento na entrega (PJ + Rio Branco)
+            $this->checkPaymentOnDeliveryEligibility();
 
             // Dispara evento JavaScript para focar no campo número
             $this->dispatch('address-filled');
@@ -322,6 +326,40 @@ class CheckoutPage extends Component
     public function toggleSummary()
     {
         $this->summaryExpanded = !$this->summaryExpanded;
+    }
+
+    /**
+     * Verifica se o usuário é elegível para pagamento na entrega
+     * Requisitos: Pessoa Jurídica (PJ) + Rio Branco - AC
+     */
+    private function checkPaymentOnDeliveryEligibility(): void
+    {
+        $user = Auth::user();
+        
+        // Verificar se é Pessoa Jurídica
+        $isPJ = $user && method_exists($user, 'isPessoaJuridica') && $user->isPessoaJuridica();
+        
+        // Verificar se é Rio Branco - AC
+        $cidadeNormalizada = mb_strtolower(trim($this->cidade ?? ''));
+        $estadoNormalizado = mb_strtoupper(trim($this->estado ?? ''));
+        $isRioBranco = in_array($cidadeNormalizada, ['rio branco', 'riobranco']);
+        $isAcre = $estadoNormalizado === 'AC';
+        
+        $this->canPayOnDelivery = $isPJ && $isRioBranco && $isAcre;
+        
+        // Se não é mais elegível mas tinha selecionado delivery, volta para pix
+        if (!$this->canPayOnDelivery && $this->paymentMethod === 'delivery') {
+            $this->paymentMethod = 'pix';
+        }
+        
+        Log::info('Verificação de elegibilidade para pagamento na entrega', [
+            'user_id' => $user?->id,
+            'is_pj' => $isPJ,
+            'cidade' => $this->cidade,
+            'estado' => $this->estado,
+            'is_rio_branco' => $isRioBranco && $isAcre,
+            'can_pay_on_delivery' => $this->canPayOnDelivery,
+        ]);
     }
 
     /**
@@ -489,6 +527,14 @@ class CheckoutPage extends Component
             // Processar pagamento baseado no método selecionado
             if ($this->paymentMethod === 'pix') {
                 return $this->processPixPayment($order, $cartItemsArray, $shippingCost, $user, $endereco);
+            } elseif ($this->paymentMethod === 'delivery') {
+                // Pagamento na Entrega - Apenas para PJ + Rio Branco
+                // Verificar elegibilidade novamente por segurança
+                $this->checkPaymentOnDeliveryEligibility();
+                if (!$this->canPayOnDelivery) {
+                    throw new \Exception('Pagamento na entrega disponível apenas para clientes PJ em Rio Branco - AC.');
+                }
+                return $this->processPaymentOnDelivery($order, $cartItemsArray, $shippingCost, $user, $endereco);
             } else {
                 // Cartão de Crédito via Checkout Pro (redireciona para Mercado Pago)
                 return $this->processMercadoPagoCheckoutPro($order, $cartItemsArray, $shippingCost, $user, $endereco);
@@ -589,6 +635,49 @@ class CheckoutPage extends Component
     }
 
     /**
+     * Processa pedido com Pagamento na Entrega (apenas PJ + Rio Branco)
+     * O pedido fica com status 'awaiting_delivery_payment' até o entregador confirmar
+     */
+    private function processPaymentOnDelivery($order, array $cartItemsArray, float $shippingCost, $user, $endereco)
+    {
+        try {
+            // Atualizar status do pedido para aguardando pagamento na entrega
+            $order->update([
+                'status' => 'pending',
+                'payment_method' => 'delivery',
+                'payment_status' => 'awaiting_delivery_payment',
+            ]);
+
+            Log::info('Pedido criado com Pagamento na Entrega', [
+                'order_id' => $order->id,
+                'user_id' => $user->id,
+                'user_type' => $user->user_type,
+                'cnpj' => $user->cnpj ?? 'N/A',
+                'cidade' => $this->cidade,
+                'total' => $order->total_amount,
+            ]);
+
+            // Commit da transação
+            DB::commit();
+
+            // Limpar carrinho
+            Cart::clear();
+
+            // Redirecionar para página de sucesso
+            session()->flash('message', 'Pedido realizado com sucesso! O pagamento será feito na entrega.');
+            return redirect()->route('checkout.success');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Erro ao processar Pagamento na Entrega', [
+                'error' => $e->getMessage(),
+                'order_id' => $order->id ?? null,
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
      * Verifica o status do pagamento PIX
      */
     public function checkPixPaymentStatus()
@@ -602,8 +691,25 @@ class CheckoutPage extends Component
             $payment = $mercadopagoService->getPayment($this->pixPaymentId);
 
             if ($payment && $payment['status'] === 'approved') {
+                // Atualizar status do pedido para 'processing'
+                if ($this->pixOrderId) {
+                    $order = Order::find($this->pixOrderId);
+                    if ($order && $order->status !== 'processing') {
+                        $order->update([
+                            'status' => 'processing',
+                            'payment_status' => 'approved',
+                        ]);
+                        
+                        Log::info('Pagamento PIX aprovado via polling', [
+                            'order_id' => $this->pixOrderId,
+                            'payment_id' => $this->pixPaymentId,
+                        ]);
+                    }
+                }
+                
                 // Pagamento aprovado - redirecionar para página de sucesso
-                return redirect()->route('checkout.success')->with('message', 'Pagamento confirmado com sucesso!');
+                session()->flash('message', 'Pagamento confirmado com sucesso!');
+                return redirect()->route('checkout.success');
             }
         } catch (\Exception $e) {
             Log::error('Erro ao verificar status do PIX', [

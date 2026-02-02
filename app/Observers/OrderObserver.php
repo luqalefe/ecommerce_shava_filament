@@ -28,10 +28,6 @@ class OrderObserver
 
             // Envia notificação ao cliente de forma assíncrona (não bloqueia o save)
             // Usa dispatch para executar após a resposta HTTP
-            // IMPORTANTE: Este código NUNCA deve lançar exceção para não bloquear o save
-            // O Observer estava causando timeout (tela preta) e duplicidade de emails.
-            // Desabilitado temporariamente em favor da notificação manual no OrderResource.
-            /*
             dispatch(function () use ($order, $oldStatus, $newStatus, $userId) {
                 try {
                     // Busca o pedido novamente para garantir que tem os dados atualizados
@@ -41,14 +37,15 @@ class OrderObserver
                         // Tenta enviar notificação, mas se falhar, apenas loga o erro
                         try {
                             $orderFresh->user->notify(new OrderStatusChangedNotification($orderFresh, $oldStatus, $newStatus));
-                            Log::info('Notificação enviada com sucesso', [
+                            Log::info('Notificação de status enviada com sucesso', [
                                 'order_id' => $orderFresh->id,
                                 'user_id' => $orderFresh->user_id,
+                                'old_status' => $oldStatus,
+                                'new_status' => $newStatus,
                             ]);
                         } catch (\Exception $notifyException) {
-                            // Se falhar ao enviar notificação (ex: email não configurado), apenas loga
-                            // NÃO lança exceção para não bloquear o save do pedido
-                            Log::warning('Falha ao enviar notificação (não bloqueia o save)', [
+                            // Se falhar ao enviar notificação, apenas loga
+                            Log::warning('Falha ao enviar notificação de status', [
                                 'order_id' => $orderFresh->id,
                                 'user_id' => $orderFresh->user_id,
                                 'error' => $notifyException->getMessage(),
@@ -61,14 +58,12 @@ class OrderObserver
                         ]);
                     }
                 } catch (\Exception $e) {
-                    // Catch geral para garantir que NUNCA bloqueia o save
-                    Log::error('Erro no Observer (não bloqueia o save)', [
+                    Log::error('Erro no Observer ao enviar notificação', [
                         'order_id' => $order->id,
                         'error' => $e->getMessage(),
                     ]);
                 }
             })->afterResponse();
-            */
         }
     }
 }

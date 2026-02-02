@@ -472,6 +472,26 @@
                                     <span class="payment-desc">Pague em até 12x via Mercado Pago</span>
                                 </div>
                             </label>
+
+                            {{-- Pagamento na Entrega (apenas PJ + Rio Branco) --}}
+                            @if($canPayOnDelivery)
+                            <label class="payment-option {{ $paymentMethod === 'delivery' ? 'selected' : '' }}">
+                                <input type="radio" wire:model.live="paymentMethod" value="delivery">
+                                <div class="payment-icon delivery-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="1" y="3" width="15" height="13" rx="2"/>
+                                        <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+                                        <circle cx="5.5" cy="18.5" r="2.5"/>
+                                        <circle cx="18.5" cy="18.5" r="2.5"/>
+                                    </svg>
+                                </div>
+                                <div class="payment-info">
+                                    <span class="payment-name">Pagamento na Entrega</span>
+                                    <span class="payment-badge delivery-badge">Exclusivo PJ</span>
+                                    <span class="payment-desc">Pague em dinheiro ou cartão na entrega</span>
+                                </div>
+                            </label>
+                            @endif
                         </div>
                         
                         <div class="payment-security">
@@ -933,6 +953,7 @@
     .payment-badge.pix-badge { background: #ECFDF5; color: #059669; }
     .payment-badge.card { background: #EFF6FF; color: #2563EB; }
     .payment-badge.card-badge { background: #EFF6FF; color: #2563EB; }
+    .payment-badge.delivery-badge { background: #FEF3C7; color: #D97706; }
     .payment-desc { display: block; font-size: 0.85rem; color: #78716C; margin-top: 0.25rem; }
 
     .payment-security {
