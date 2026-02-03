@@ -49,6 +49,6 @@ class AppServiceProvider extends ServiceProvider
 
         // Registrar Observer para notificações de mudança de status
         // O Observer agora está seguro: não bloqueia o save mesmo se houver erro de email
-        // Order::observe(OrderObserver::class);
+        Order::observe(OrderObserver::class);
     }
 }
