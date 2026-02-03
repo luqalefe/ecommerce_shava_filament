@@ -416,7 +416,7 @@
                                             >
                                             <div class="shipping-info">
                                                 <span class="shipping-name">{{ $option['service'] }}</span>
-                                                <span class="shipping-details">{{ $option['carrier'] }} • {{ $option['deadline'] }} dias úteis</span>
+                                                <span class="shipping-details">{{ $option['carrier'] }}</span>
                                             </div>
                                             <span class="shipping-price">R$ {{ number_format($option['price'], 2, ',', '.') }}</span>
                                         </label>
