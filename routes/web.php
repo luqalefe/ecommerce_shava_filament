@@ -25,7 +25,12 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 Route::get('/', \App\Livewire\HomePage::class)->name('home');
 
 // Sobre Nós (Livewire)
+// Sobre Nós (Livewire)
 Route::get('/sobre-nos', \App\Livewire\AboutPage::class)->name('about');
+
+// Páginas Legais
+Route::get('/politica-de-privacidade', \App\Livewire\PrivacyPolicyPage::class)->name('privacy-policy');
+Route::get('/termos-de-uso', \App\Livewire\TermsOfUsePage::class)->name('terms-of-use');
 
 // MODIFICADO: Loja agora usa Livewire
 Route::get('/loja', \App\Livewire\ProductList::class)->name('products.index');

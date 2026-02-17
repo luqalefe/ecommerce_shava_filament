@@ -31,9 +31,8 @@
             <div class="col-span-6 md:col-span-4 lg:col-span-3">
                 <h6 class="font-semibold text-sm uppercase tracking-wider text-[var(--sh-dark-text)] mb-4">Suporte</h6>
                 <ul class="space-y-3">
-                    <li><a href="#" class="text-[var(--sh-text-light)] hover:text-[var(--sh-muted-gold)] transition-colors text-sm">Dúvidas Frequentes</a></li>
-                    <li><a href="#" class="text-[var(--sh-text-light)] hover:text-[var(--sh-muted-gold)] transition-colors text-sm">Política de Privacidade</a></li>
-                    <li><a href="#" class="text-[var(--sh-text-light)] hover:text-[var(--sh-muted-gold)] transition-colors text-sm">Termos de Uso</a></li>
+                    <li><a href="{{ route('privacy-policy') }}" class="text-[var(--sh-text-light)] hover:text-[var(--sh-muted-gold)] transition-colors text-sm">Política de Privacidade</a></li>
+                    <li><a href="{{ route('terms-of-use') }}" class="text-[var(--sh-text-light)] hover:text-[var(--sh-muted-gold)] transition-colors text-sm">Termos de Uso</a></li>
                 </ul>
             </div>
 
