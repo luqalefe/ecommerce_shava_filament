@@ -48,7 +48,10 @@
             <div class="mt-8 pt-6 border-t border-gray-200 text-sm text-gray-500">
                 <p>Última atualização: {{ date('d/m/Y') }}</p>
                 <p><strong>Shava Haux</strong> - Rio Branco, Acre</p>
+<<<<<<< HEAD
                 {{-- CNPJ removido conforme solicitação --}}
+=======
+>>>>>>> 273a8512fa6767eaab3416e7436abd4219637839
             </div>
         </div>
     </div>

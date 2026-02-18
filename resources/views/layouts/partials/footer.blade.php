@@ -31,6 +31,10 @@
             <div class="col-span-6 md:col-span-4 lg:col-span-3">
                 <h6 class="font-semibold text-sm uppercase tracking-wider text-[var(--sh-dark-text)] mb-4">Suporte</h6>
                 <ul class="space-y-3">
+<<<<<<< HEAD
+=======
+
+>>>>>>> 273a8512fa6767eaab3416e7436abd4219637839
                     <li><a href="{{ route('privacy-policy') }}" class="text-[var(--sh-text-light)] hover:text-[var(--sh-muted-gold)] transition-colors text-sm">Política de Privacidade</a></li>
                     <li><a href="{{ route('terms-of-use') }}" class="text-[var(--sh-text-light)] hover:text-[var(--sh-muted-gold)] transition-colors text-sm">Termos de Uso</a></li>
                 </ul>
@@ -51,7 +55,7 @@
                     </li>
                     {{-- Ícone Instagram (SVG) --}}
                     <li>
-                        <a href="#" target="_blank" class="flex items-center text-[var(--sh-text-light)] hover:text-[var(--sh-muted-gold)] transition-colors text-sm">
+                        <a href="https://www.instagram.com/shavahaux/" target="_blank" class="flex items-center text-[var(--sh-text-light)] hover:text-[var(--sh-muted-gold)] transition-colors text-sm">
                             <svg class="h-5 w-5 mr-2" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                <path fill-rule="evenodd" d="M12.315 2.064c-3.14 0-3.518.012-4.743.068-1.224.056-2.07.248-2.796.521a3.86 3.86 0 00-1.42 1.06C2.28 4.79 2.088 5.637 2.032 6.862c-.056 1.225-.068 1.603-.068 4.743s.012 3.518.068 4.743c.056 1.225.257 2.07.521 2.796a3.86 3.86 0 001.06 1.42c.677.41 1.57.61 2.796.668 1.225.056 1.603.068 4.743.068s3.518-.012 4.743-.068c1.225-.058 2.07-.257 2.796-.668a3.86 3.86 0 001.42-1.06c.41-.677.61-1.57.668-2.796.056-1.225.068-1.603.068-4.743s-.012-3.518-.068-4.743c-.058-1.225-.257-2.07-.668-2.796a3.86 3.86 0 00-1.06-1.42c-.677-.41-1.57-.61-2.796-.521-1.225-.056-1.603-.068-4.743-.068zm0 1.8c3.063 0 3.425.012 4.63.067 1.095.05 1.67.24 2.112.42a2.062 2.062 0 01.918.918c.18.442.37 1.017.42 2.112.055 1.205.067 1.567.067 4.63s-.012 3.425-.067 4.63c-.05 1.095-.24 1.67-.42 2.112a2.062 2.062 0 01-.918.918c-.442.18-1.017.37-2.112.42-1.205.055-1.567.067-4.63.067s-3.425-.012-4.63-.067c-1.095-.05-1.67-.24-2.112-.42a2.062 2.062 0 01-.918-.918c-.18-.442-.37-1.017-.42-2.112-.055-1.205-.067-1.567-.067-4.63s.012-3.425.067-4.63c.05-1.095.24-1.67.42-2.112a2.062 2.062 0 01.918-.918c.442-.18 1.017-.37 2.112-.42 1.205-.055 1.567-.067 4.63-.067zm0 2.903a5.232 5.232 0 100 10.464 5.232 5.232 0 000-10.464zM12 15.4a3.4 3.4 0 110-6.8 3.4 3.4 0 010 6.8zm4.33-8.08a1.237 1.237 0 100 2.474 1.237 1.237 0 000-2.474z" clip-rule="evenodd" />
                             </svg>
